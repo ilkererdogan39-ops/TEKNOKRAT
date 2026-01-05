@@ -1,0 +1,84 @@
+# Kurumsal Eğitim Yönetim Sistemi (LMS)
+
+## Overview
+A Corporate Training Management System built in Turkish. The platform enables organizations to manage employee training programs, assign video-based trainings to participants, and track completion progress.
+
+## Features
+
+### Admin Panel
+- **User Management**: Create, edit, delete participants with employee ID, name, department, email
+- **CSV Import**: Bulk import participants from CSV files
+- **Training Assignment**: Create video trainings (YouTube/Vimeo) and assign to multiple participants
+- **Reports**: View completion statistics per participant and per training
+
+### Participant Panel
+- **Training Dashboard**: View assigned trainings with thumbnails and progress
+- **Video Player**: Watch embedded training videos
+- **Completion Tracking**: Mark trainings as complete with progress tracking
+
+## Technical Stack
+
+### Frontend
+- React with TypeScript
+- Wouter for routing
+- TanStack Query for data fetching
+- Tailwind CSS with shadcn/ui components
+- Dark mode support via ThemeProvider
+
+### Backend
+- Express.js API server
+- In-memory storage (MemStorage class)
+- Zod for request validation
+
+## Key Routes
+
+### Frontend
+- `/` - Landing page with role selection
+- `/admin/login` - Admin login (credentials: admin / admin123)
+- `/admin/dashboard` - Admin dashboard with tabs
+- `/participant/login` - Participant login (email/password)
+- `/participant/dashboard` - Participant training dashboard
+
+### API Endpoints
+- `GET/POST /api/participants` - List/create participants
+- `PATCH/DELETE /api/participants/:id` - Update/delete participant
+- `POST /api/participants/login` - Participant authentication
+- `POST /api/participants/import` - CSV import
+- `GET /api/trainings` - List trainings
+- `POST /api/trainings/assign` - Create and assign training
+- `DELETE /api/trainings/:id` - Delete training
+- `GET /api/assignments` - List all assignments
+- `GET /api/my-trainings/:participantId` - Get participant's trainings
+- `POST /api/assignments/:id/complete` - Mark training complete
+- `DELETE /api/reset` - Reset all data
+
+## Security
+- Passwords are stripped from all API responses
+- Admin credentials: username `admin`, password `admin123`
+
+## Project Structure
+```
+client/
+├── src/
+│   ├── components/
+│   │   ├── admin/          # Admin dashboard components
+│   │   ├── ui/             # shadcn/ui components
+│   │   └── ThemeToggle.tsx
+│   ├── lib/
+│   │   ├── AuthContext.tsx # Authentication state
+│   │   ├── ThemeProvider.tsx # Dark mode
+│   │   └── queryClient.ts
+│   ├── pages/              # Page components
+│   └── App.tsx
+server/
+├── routes.ts               # API endpoints
+├── storage.ts              # In-memory storage
+└── index.ts
+shared/
+└── schema.ts               # Type definitions & validation
+```
+
+## Development
+- Run `npm run dev` to start the development server
+- Frontend serves on port 5000
+- Hot module replacement enabled

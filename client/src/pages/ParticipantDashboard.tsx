@@ -1,0 +1,323 @@
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/lib/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Clock, Video, Loader2, X } from "lucide-react";
+import type { Training, TrainingAssignment } from "@shared/schema";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface AssignmentWithTraining {
+  assignment: TrainingAssignment;
+  training: Training;
+}
+
+export default function ParticipantDashboard() {
+  const [, setLocation] = useLocation();
+  const { session, participant, logout } = useAuth();
+  const { toast } = useToast();
+  const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
+
+  const { data: myTrainings = [], isLoading } = useQuery<AssignmentWithTraining[]>({
+    queryKey: ["/api/my-trainings", session?.participantId],
+    queryFn: async () => {
+      const res = await fetch(`/api/my-trainings/${session?.participantId}`);
+      if (!res.ok) throw new Error("Failed to fetch trainings");
+      return res.json();
+    },
+    enabled: !!session?.participantId,
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const res = await apiRequest("POST", `/api/assignments/${assignmentId}/complete`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-trainings"] });
+      toast({ title: "Tebrikler!", description: "Eğitimi başarıyla tamamladınız." });
+      setSelectedTraining(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "İşlem sırasında bir hata oluştu.", variant: "destructive" });
+    },
+  });
+
+  if (!session || session.role !== "participant") {
+    setLocation("/participant/login");
+    return null;
+  }
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/");
+  };
+
+  const completedCount = myTrainings.filter(t => t.assignment.completed).length;
+  const pendingCount = myTrainings.length - completedCount;
+  const overallProgress = myTrainings.length > 0 
+    ? Math.round((completedCount / myTrainings.length) * 100)
+    : 0;
+
+  const getEmbedUrl = (url: string) => {
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s]+)/);
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1`;
+    }
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
+    }
+    return url;
+  };
+
+  const getVideoThumbnail = (url: string) => {
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s]+)/);
+    if (youtubeMatch) {
+      return `https://img.youtube.com/vi/${youtubeMatch[1]}/mqdefault.jpg`;
+    }
+    return null;
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 border-b bg-card">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <GraduationCap className="h-6 w-6 text-primary" />
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-semibold">Eğitimlerim</h1>
+              {participant && (
+                <p className="text-xs text-muted-foreground">{participant.fullName}</p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={handleLogout}
+              data-testid="button-logout"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Çıkış</span>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Toplam Eğitim
+              </CardTitle>
+              <BookOpen className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold" data-testid="stat-total-trainings">
+                {myTrainings.length}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Tamamlanan
+              </CardTitle>
+              <CheckCircle className="h-5 w-5 text-chart-2" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold" data-testid="stat-completed">
+                {completedCount}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {pendingCount} beklemede
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                İlerleme
+              </CardTitle>
+              <Clock className="h-5 w-5 text-chart-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold" data-testid="stat-progress">
+                %{overallProgress}
+              </div>
+              <Progress value={overallProgress} className="mt-2 h-2" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Atanan Eğitimler</CardTitle>
+            <CardDescription>
+              Size atanan eğitimleri izleyin ve tamamlayın.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-64 w-full" />
+                ))}
+              </div>
+            ) : myTrainings.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Henüz eğitim atanmamış</h3>
+                <p className="text-muted-foreground">
+                  Yöneticiniz size eğitim atadığında burada görünecek.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myTrainings.map(({ assignment, training }) => {
+                  const thumbnail = getVideoThumbnail(training.videoUrl);
+                  
+                  return (
+                    <Card 
+                      key={assignment.id} 
+                      className={`overflow-hidden ${assignment.completed ? "border-chart-2/50" : ""}`}
+                      data-testid={`training-card-${assignment.id}`}
+                    >
+                      <div className="relative aspect-video bg-muted">
+                        {thumbnail ? (
+                          <img 
+                            src={thumbnail} 
+                            alt={training.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Video className="h-12 w-12 text-muted-foreground" />
+                          </div>
+                        )}
+                        {assignment.completed && (
+                          <div className="absolute inset-0 bg-chart-2/20 flex items-center justify-center">
+                            <div className="bg-chart-2 rounded-full p-2">
+                              <CheckCircle className="h-8 w-8 text-white" />
+                            </div>
+                          </div>
+                        )}
+                        {!assignment.completed && (
+                          <Button
+                            size="icon"
+                            className="absolute inset-0 m-auto w-14 h-14 rounded-full"
+                            onClick={() => setSelectedTraining({ assignment, training })}
+                            data-testid={`button-play-${assignment.id}`}
+                          >
+                            <Play className="h-6 w-6" />
+                          </Button>
+                        )}
+                      </div>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold line-clamp-2">{training.title}</h3>
+                          <Badge variant={assignment.completed ? "default" : "secondary"} className="shrink-0">
+                            {assignment.completed ? "Tamamlandı" : "Bekliyor"}
+                          </Badge>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <span>İlerleme</span>
+                            <span>%{assignment.progress}</span>
+                          </div>
+                          <Progress value={assignment.progress} className="h-2" />
+                        </div>
+                        {!assignment.completed && (
+                          <Button 
+                            className="w-full mt-4"
+                            onClick={() => setSelectedTraining({ assignment, training })}
+                            data-testid={`button-watch-${assignment.id}`}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            İzle
+                          </Button>
+                        )}
+                        {assignment.completed && assignment.completedAt && (
+                          <p className="text-xs text-muted-foreground mt-4">
+                            Tamamlanma: {new Date(assignment.completedAt).toLocaleDateString("tr-TR")}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+
+      <Dialog open={!!selectedTraining} onOpenChange={(open) => !open && setSelectedTraining(null)}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black">
+          <DialogHeader className="p-4 pb-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-white">
+                {selectedTraining?.training.title}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white"
+                onClick={() => setSelectedTraining(null)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            {selectedTraining && (
+              <iframe
+                src={getEmbedUrl(selectedTraining.training.videoUrl)}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            )}
+          </div>
+          {selectedTraining && !selectedTraining.assignment.completed && (
+            <div className="p-4 bg-black/90 border-t border-white/10">
+              <Button
+                className="w-full"
+                onClick={() => completeMutation.mutate(selectedTraining.assignment.id)}
+                disabled={completeMutation.isPending}
+                data-testid="button-complete-training"
+              >
+                {completeMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    İşleniyor...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-4 w-4" />
+                    Eğitimi Tamamla
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
