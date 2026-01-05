@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kurumsal Eğitim Yönetim Sistemi (LMS)</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50; 
+            --secondary-color: #3498db; 
+            --accent-color: #c0392b; 
+            --success-color: #27ae60; 
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --muted-text: #7f8c8d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Login --- */
+        #landing-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            color: white;
+        }
+
+        .role-cards {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .role-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: transform 0.3s, background 0.3s;
+            width: 300px;
+        }
+        .role-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.2); }
+
+        /* --- Forms --- */
+        .auth-box {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            color: var(--text-color);
+        }
+
+        .form-group { margin-bottom: 15px; text-align: left; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; }
+        
+        button {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        button.danger {
+            background: var(--accent-color);
+            color: white;
+            width: auto;
+            padding: 5px 10px;
+            font-size: 0.85rem;
+            margin-left: 5px;
+        }
+        button.danger:hover { background: #a93226; }
+
+        button.secondary-btn {
+            background: var(--primary-color);
+            width: auto;
+            margin-top: 10px;
+            padding: 8px 15px;
+        }
+
+        /* --- Dashboards --- */
+        .dashboard-header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .nav-tabs button {
+            background: transparent;
+            color: var(--muted-text);
+            width: auto;
+            margin: 0 5px;
+            border-bottom: 2px solid transparent;
+            border-radius: 0;
+            padding: 10px 15px;
+        }
+        .nav-tabs button.active {
+            color: var(--secondary-color);
+            border-bottom: 2px solid var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .dashboard-content {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            min-height: 500px;
+        }
+
+        /* --- Tables --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: var(--primary-color); }
+
+        /* --- Progress Bar --- */
+        .progress-wrapper {
+            background-color: #eee;
+            border-radius: 10px;
+            height: 10px;
+            width: 100%;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success-color);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* --- Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #fff;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 10px;
+            padding: 30px;
+            color: var(--text-color);
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .video-modal-content {
+            background: #000;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            color: white;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+        .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+        /* --- Toast --- */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateY(100px);
+            transition: transform 0.3s ease;
+            z-index: 2000;
+        }
+        .toast.show { transform: translateY(0); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--secondary-color);
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast">İşlem Başarılı!</div>
+
+    <!-- LANDING PAGE -->
+    <div id="landing-page">
+        <h1>Kurumsal Eğitim ve Gelişim Sistemi</h1>
+        <p>Lütfen devam etmek için bir panel seçiniz.</p>
+        <div class="role-cards">
+            <div class="role-card" onclick="showLogin('admin')">
+                <h2>Yönetim Paneli</h2>
+                <p>Eğitim atama, kişi yönetimi ve raporlama.</p>
+            </div>
+            <div class="role-card" onclick="showLogin('participant')">
+                <h2>Katılımcı Paneli</h2>
+                <p>Eğitim izleme ve gelişim takibi.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div id="admin-login" class="container hidden" style="justify-content: center; display: flex; height: 90vh;">
+        <div class="auth-box">
+            <h2 style="text-align: center; margin-bottom: 20px;">Yönetici Girişi</h2>
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" id="admin-user" value="admin">
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" id="admin-pass" placeholder="Şifrenizi Giriniz">
+            </div>
+            <button onclick="adminLogin()">Giriş Yap</button>
+            <button class="secondary-btn" onclick="goHome()">Ana Sayfaya Dön</button>
+        </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="admin-dashboard" class="container hidden">
+        <div class="dashboard-header">
+            <h3>Yönetim Paneli</h3>
+            <button class="secondary-btn danger" onclick="logout()" style="width: auto;">Çıkış Yap</button>
+        </div>
+
+        <div class="nav-tabs">
+            <button onclick="switchAdminTab('users')" class="active" id="btn-tab-users">Katılımcı Yönetimi</button>
+            <button onclick="switchAdminTab('trainings')" id="btn-tab-trainings">Eğitim Atama</button>
+            <button onclick="switchAdminTab('reports')" id="btn-tab-reports">Raporlar</button>
+        </div>
+
+        <div class="dashboard-content">
+            <!-- Users Tab -->
+            <div id="tab-users">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <h4>Katılımcı Listesi</h4>
+                    <div>
+                        <button class="secondary-btn" onclick="toggleAddUserModal(true)">+ Yeni Ekle</button>
+                        <button class="secondary-btn" onclick="document.getElementById('csv-file-input').click()">Excel/CSV İçe Aktar</button>
+                        <input type="file" id="csv-file-input" accept=".csv" hidden onchange="importCSV(this)">
+                        <!-- Alternatif: Tümünü Sıfırla Butonu -->
+                        <button class="danger" style="background:#555" onclick="resetSystem()">Tüm Verileri Sıfırla</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sicil No</th>
+                            <th>Ad Soyad</th>
+                            <th>Departman</th>
+                            <th>E-Posta</th>
+                            <th>Şifre</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        <!-- JS ile dolacak -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Trainings Tab -->
+            <div id="tab-trainings" class="hidden">
+                <h4>Eğitim Atama</h4>
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Eğitim Başlığı</label>
+                        <input type="text" id="training-title" placeholder="Örn: İş Sağlığı ve Güvenliği">
+                    </div>
+                    <div class="form-group">
+                        <label>Video Linki (YouTube veya Vimeo)</label>
+                        <input type="text" id="training-url" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <div class="form-group">
+                        <label>Hedef Katılımcılar (Ctrl ile çoklu seçim)</label>
+                        <select id="training-target-users" multiple style="height: 150px;"></select>
+                    </div>
+                    <button onclick="assignTraining()">Eğitimi Ata</button>
+                </div>
+                <h4>Mevcut Eğitim Atamaları</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Eğitim Adı</th>
+                            <th>Katılımcı</th>
+                            <th>İlerleme</th>
+                            <th>Durum</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignments-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="tab-reports" class="hidden">
+                <h4>Kurumsal Değerlendirme Raporu</h4>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-total-users">0</div>
+                        <div>Toplam Katılımcı</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-total-trainings">0</div>
+                        <div>Atanan Eğitim</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="stat-completed">0%</div>
+                        <div>Tamamlanma Oranı</div>
+                    </div>
+                </div>
+                <h4>Karneler</h4>
+                <div class="form-group">
+                    <select id="report-user-select" onchange="loadUserReport(this.value)">
+                        <option value="">Kişi Seçiniz...</option>
+                    </select>
+                </div>
+                <div id="report-card-area" style="border: 1px solid #eee; padding: 20px; border-radius: 8px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARTICIPANT FLOW -->
+    <div id="participant-login" class="container hidden" style="justify-content: center; display: flex; height: 90vh;">
+        <div class="auth-box">
+            <h2 style="text-align: center; margin-bottom: 20px;">Katılımcı Girişi</h2>
+            <div id="step-verify">
+                <div class="form-group">
+                    <label>Sicil No</label>
+                    <input type="text" id="part-login-sicil" placeholder="Sicil No Giriniz">
+                </div>
+                <div class="form-group">
+                    <label>E-Posta</label>
+                    <input type="email" id="part-login-email" placeholder="E-Posta Adresiniz">
+                </div>
+                <button onclick="verifyIdentity()">Giriş / Şifre Belirle</button>
+                <button class="secondary-btn" onclick="goHome()">Ana Sayfaya Dön</button>
+            </div>
+            <div id="step-set-password" class="hidden">
+                <p style="margin-bottom: 10px; color: var(--secondary-color);">Şifrenizi belirleyin.</p>
+                <div class="form-group">
+                    <label>Yeni Şifre</label>
+                    <input type="password" id="part-new-pass" placeholder="Yeni Şifre">
+                </div>
+                <button onclick="setPassword()">Şifre Belirle ve Devam Et</button>
+            </div>
+            <div id="step-login-pass" class="hidden">
+                <div class="form-group">
+                    <label>Şifre</label>
+                    <input type="password" id="part-input-pass" placeholder="Şifreniz">
+                </div>
+                <button onclick="participantLogin()">Giriş Yap</button>
+                <button class="secondary-btn" onclick="resetLoginFlow()">Geri</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PARTICIPANT DASHBOARD -->
+    <div id="participant-dashboard" class="container hidden">
+        <div class="dashboard-header">
+            <div>
+                <h3 id="welcome-msg">Hoş Geldiniz</h3>
+                <span id="welcome-info" style="font-size: 0.9rem; color: #666;"></span>
+            </div>
+            <button class="secondary-btn danger" onclick="logout()">Çıkış Yap</button>
+        </div>
+        <div class="dashboard-content">
+            <h4>Eğitimlerim</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Eğitim Adı</th>
+                        <th>Durum</th>
+                        <th>İlerleme</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+                <tbody id="participant-training-list"></tbody>
+            </table>
+            <div id="participant-report-area" style="margin-top: 40px;"></div>
+        </div>
+    </div>
+
+    <!-- USER ADD MODAL -->
+    <div id="add-user-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3>Yeni Katılımcı Ekle</h3>
+            <div class="form-group"><label>Sicil No</label><input type="text" id="new-user-sicil"></div>
+            <div class="form-group"><label>Ad Soyad</label><input type="text" id="new-user-name"></div>
+            <div class="form-group"><label>Departman</label><input type="text" id="new-user-dept"></div>
+            <div class="form-group"><label>E-Posta</label><input type="email" id="new-user-email"></div>
+            <div class="modal-actions">
+                <button class="secondary-btn" onclick="toggleAddUserModal(false)">İptal</button>
+                <button onclick="saveNewUser()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIDEO MODAL -->
+    <div id="video-modal" class="modal-overlay hidden">
+        <div class="modal-content video-modal-content">
+            <h3 id="modal-title" style="margin-bottom: 15px;">Eğitim Videosu</h3>
+            <div class="video-container">
+                <iframe id="video-frame" src="" allowfullscreen></iframe>
+            </div>
+            <div class="modal-actions" style="justify-content: space-between; align-items: center; margin-top:15px;">
+                <div style="flex:1; margin-right:20px;">
+                    <label>İlerleme: <span id="progress-text">0%</span></label>
+                    <div class="progress-wrapper"><div class="progress-fill" id="video-progress-bar"></div></div>
+                </div>
+                <div>
+                    <button id="simulate-watch-btn" style="padding:5px 10px; font-size:0.8rem;" onclick="simulateProgress(10)">+10% İzle</button>
+                    <button class="secondary-btn" onclick="closeVideoModal()">Kapat</button>
+                    <button id="complete-training-btn" class="success" disabled onclick="completeTraining()">Tamamla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEYS = { USERS: 'lms_users', ASSIGNMENTS: 'lms_assignments', LOGGED_IN_USER: 'lms_session' };
+
+        function getData(key) { return JSON.parse(localStorage.getItem(key)) || []; }
+        function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast'); t.textContent=msg; t.style.background=type==='error'?'#e74c3c':'#27ae60'; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+        }
+
+        function hideAllSections() {
+            ['landing-page','admin-login','admin-dashboard','participant-login','participant-dashboard','video-modal','add-user-modal'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+        }
+
+        function goHome() { hideAllSections(); document.getElementById('landing-page').classList.remove('hidden'); logout(true); }
+        function logout(soft=false) { localStorage.removeItem(DB_KEYS.LOGGED_IN_USER); if(!soft) { goHome(); showToast('Çıkış yapıldı.'); } }
+        function showLogin(role) {
+            hideAllSections();
+            if(role==='admin') document.getElementById('admin-login').classList.remove('hidden');
+            else { document.getElementById('participant-login').classList.remove('hidden'); resetLoginFlow(); }
+        }
+
+        // --- ADMIN LOGIC ---
+        function adminLogin() {
+            const u = document.getElementById('admin-user').value;
+            const p = document.getElementById('admin-pass').value;
+            if (u === 'admin' && p === 'egitim123') {
+                hideAllSections(); document.getElementById('admin-dashboard').classList.remove('hidden'); loadAdminData();
+            } else showToast('Hatalı bilgiler!', 'error');
+        }
+
+        function switchAdminTab(t) {
+            ['users','trainings','reports'].forEach(x=>{document.getElementById('tab-'+x).classList.add('hidden'); document.getElementById('btn-tab-'+x).classList.remove('active');});
+            document.getElementById('tab-'+t).classList.remove('hidden'); document.getElementById('btn-tab-'+t).classList.add('active');
+            if(t==='users') renderUserTable();
+            if(t==='trainings') renderAssignments();
+            if(t==='reports') loadAdminReports();
+        }
+
+        function loadAdminData() { renderUserTable(); renderAssignments(); populateTrainingUserSelect(); }
+
+        // --- YÖNTEM: OLAY DELEGASYONU (EVENT DELEGATION) ---
+        // Tüm tablo butonlarını tek bir yerden dinliyoruz. Bu en sağlam yöntemdir.
+        
+        document.getElementById('user-table-body').addEventListener('click', function(e) {
+            // Tıklanan bir buton mu?
+            if (e.target.tagName === 'BUTTON') {
+                const btn = e.target;
+                const sicil = btn.getAttribute('data-sicil');
+
+                // Silme butonu mu?
+                if (btn.classList.contains('btn-delete')) {
+                    if(confirm("Bu kaydı silmek istiyor musunuz?")) {
+                        let users = getData(DB_KEYS.USERS);
+                        users = users.filter(u => u.sicil !== sicil);
+                        saveData(DB_KEYS.USERS, users);
+                        
+                        // Atamaları da temizle
+                        let assign = getData(DB_KEYS.ASSIGNMENTS);
+                        assign = assign.filter(a => a.userSicil !== sicil);
+                        saveData(DB_KEYS.ASSIGNMENTS, assign);
+                        
+                        renderUserTable();
+                        populateTrainingUserSelect();
+                        showToast('Kayıt silindi.');
+                    }
+                }
+                
+                // Şifre sıfırlama butonu mu?
+                if (btn.classList.contains('btn-reset')) {
+                    let users = getData(DB_KEYS.USERS);
+                    const user = users.find(u => u.sicil === sicil);
+                    if(user) {
+                        user.password = null;
+                        saveData(DB_KEYS.USERS, users);
+                        renderUserTable();
+                        showToast('Şifre sıfırlandı.');
+                    }
+                }
+            }
+        });
+
+        // Eğitim Silme Delegasyonu
+        document.getElementById('assignments-table-body').addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                const id = e.target.getAttribute('data-id');
+                if (confirm("Bu eğitimi silmek istiyor musunuz?")) {
+                    let assign = getData(DB_KEYS.ASSIGNMENTS);
+                    assign = assign.filter(a => a.id !== id);
+                    saveData(DB_KEYS.ASSIGNMENTS, assign);
+                    renderAssignments();
+                    showToast('Eğitim silindi.');
+                }
+            }
+        });
+
+        function renderUserTable() {
+            const users = getData(DB_KEYS.USERS);
+            const tbody = document.getElementById('user-table-body');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${u.sicil}</td>
+                    <td>${u.name}</td>
+                    <td>${u.dept}</td>
+                    <td>${u.email}</td>
+                    <td>${u.password ? '<span style="color:green">●●●●</span>' : '<span style="color:red">Belirlenmedi</span>'}</td>
+                    <td>
+                        <button class="danger btn-reset" data-sicil="${u.sicil}">Şifre Sıfırla</button>
+                        <button class="danger btn-delete" data-sicil="${u.sicil}">Sil</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleAddUserModal(show) {
+            const m = document.getElementById('add-user-modal');
+            if(show) {
+                m.classList.remove('hidden');
+                ['new-user-sicil','new-user-name','new-user-dept','new-user-email'].forEach(id=>document.getElementById(id).value='');
+            } else m.classList.add('hidden');
+        }
+
+        function saveNewUser() {
+            const s=document.getElementById('new-user-sicil').value.trim();
+            const n=document.getElementById('new-user-name').value.trim();
+            const d=document.getElementById('new-user-dept').value.trim();
+            const e=document.getElementById('new-user-email').value.trim();
+            if(!s||!n||!e) return showToast('Alanları doldurun.','error');
+            let users=getData(DB_KEYS.USERS);
+            if(users.find(u=>u.sicil===s)) return showToast('Kayıt var.','error');
+            users.push({sicil:s,name:n,dept:d,email:e,password:null});
+            saveData(DB_KEYS.USERS,users);
+            renderUserTable(); populateTrainingUserSelect(); toggleAddUserModal(false); showToast('Eklendi.');
+        }
+
+        function importCSV(input) {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split('\n');
+                let users = getData(DB_KEYS.USERS);
+                let c=0;
+                for(let i=1; i<lines.length; i++) {
+                    const cols = lines[i].split(',');
+                    if(cols.length>=4) {
+                        const s=cols[0].trim();
+                        if(!users.find(u=>u.sicil===s)) {
+                            users.push({sicil:s,name:cols[1].trim(),dept:cols[2].trim(),email:cols[3].trim(),password:null});
+                            c++;
+                        }
+                    }
+                }
+                saveData(DB_KEYS.USERS,users); renderUserTable(); populateTrainingUserSelect(); showToast(c+' kişi aktarıldı.');
+            };
+            reader.readAsText(file); input.value='';
+        }
+
+        function populateTrainingUserSelect() {
+            const users=getData(DB_KEYS.USERS);
+            const sel=document.getElementById('training-target-users'); sel.innerHTML='';
+            users.forEach(u=>{const o=document.createElement('option'); o.value=u.sicil; o.text=`${u.name} (${u.sicil})`; sel.add(o);});
+            const rs=document.getElementById('report-user-select'); rs.innerHTML='<option value="">Kişi Seç...</option>';
+            users.forEach(u=>{const o=document.createElement('option'); o.value=u.sicil; o.text=`${u.name} (${u.dept})`; rs.add(o);});
+        }
+
+        function getEmbedUrl(url) {
+            if(url.includes('youtube.com') || url.includes('youtu.be')) {
+                let v='';
+                if(url.includes('v=')) v=url.split('v=')[1].split('&')[0];
+                else if(url.includes('youtu.be/')) v=url.split('youtu.be/')[1];
+                return `https://www.youtube.com/embed/${v}`;
+            } else if(url.includes('vimeo.com')) return `https://player.vimeo.com/video/${url.split('.com/')[1]}`;
+            return '';
+        }
+
+        function assignTraining() {
+            const t=document.getElementById('training-title').value;
+            const url=document.getElementById('training-url').value;
+            const sel=document.getElementById('training-target-users');
+            const su=Array.from(sel.selectedOptions).map(o=>o.value);
+            if(!t||!url||su.length===0) return showToast('Eksik bilgi.','error');
+            const eu=getEmbedUrl(url); if(!eu) return showToast('Geçersiz link.','error');
+            let assign=getData(DB_KEYS.ASSIGNMENTS);
+            let users=getData(DB_KEYS.USERS);
+            su.forEach(sic=>{
+                const u=users.find(x=>x.sicil===sic);
+                assign.push({id:Date.now()+Math.random().toString(), userSicil:sic, userName:u.name, title:t, url:url, embedUrl:eu, progress:0, completed:false, assignedDate:new Date().toLocaleDateString('tr-TR')});
+            });
+            saveData(DB_KEYS.ASSIGNMENTS, assign);
+            document.getElementById('training-title').value=''; document.getElementById('training-url').value=''; sel.selectedIndex=-1;
+            renderAssignments(); showToast('Atandı.');
+        }
+
+        function renderAssignments() {
+            const a=getData(DB_KEYS.ASSIGNMENTS);
+            const b=document.getElementById('assignments-table-body'); b.innerHTML='';
+            a.forEach(x=>{
+                const tr=document.createElement('tr');
+                tr.innerHTML=`
+                    <td>${x.title}</td><td>${x.userName}</td>
+                    <td><div style="width:100px; background:#eee; height:5px; border-radius:5px;"><div style="width:${x.progress}%; background:var(--secondary-color); height:100%;"></div></div><small>${x.progress}%</small></td>
+                    <td>${x.completed?'Tamamlandı':'Devam ediyor'}</td>
+                    <td><button class="danger" data-id="${x.id}">Sil</button></td>
+                `;
+                b.appendChild(tr);
+            });
+        }
+
+        function loadAdminReports() {
+            const u=getData(DB_KEYS.USERS); const a=getData(DB_KEYS.ASSIGNMENTS);
+            document.getElementById('stat-total-users').textContent=u.length;
+            document.getElementById('stat-total-trainings').textContent=a.length;
+            const c=a.filter(x=>x.completed).length;
+            document.getElementById('stat-completed').textContent=`%${a.length?Math.round((c/a.length)*100):0}`;
+        }
+
+        function loadUserReport(sicil) {
+            const ar=document.getElementById('report-card-area');
+            if(!sicil) return ar.innerHTML='<p>Kişi seçin.</p>';
+            const u=getData(DB_KEYS.USERS).find(x=>x.sicil===sicil);
+            const a=getData(DB_KEYS.ASSIGNMENTS).filter(x=>x.userSicil===sicil);
+            let h=`<h3>${u.name} - Karnesi</h3><p>${u.dept} | ${u.email}</p>`;
+            if(a.length) {
+                h+='<table><thead><tr><th>Eğitim</th><th>Tarih</th><th>Durum</th></tr></thead><tbody>';
+                a.forEach(x=>h+=`<tr><td>${x.title}</td><td>${x.assignedDate}</td><td>${x.completed?'Tamamlandı':'Tamamlanmadı'}</td></tr>`);
+                h+='</tbody></table>';
+            } else h+='<p>Eğitim yok.</p>';
+            ar.innerHTML=h;
+        }
+
+        // --- PARTICIPANT LOGIC ---
+        let tempSicil=null;
+        function resetLoginFlow() {
+            document.getElementById('step-verify').classList.remove('hidden');
+            document.getElementById('step-set-password').classList.add('hidden');
+            document.getElementById('step-login-pass').classList.add('hidden');
+            document.getElementById('part-login-sicil').value='';
+            document.getElementById('part-login-email').value=''; tempSicil=null;
+        }
+        function verifyIdentity() {
+            const s=document.getElementById('part-login-sicil').value;
+            const e=document.getElementById('part-login-email').value;
+            const u=getData(DB_KEYS.USERS).find(x=>x.sicil===s && x.email===e);
+            if(!u) return showToast('Bilgiler uyuşmuyor.','error');
+            tempSicil=s;
+            if(u.password) { document.getElementById('step-verify').classList.add('hidden'); document.getElementById('step-login-pass').classList.remove('hidden'); }
+            else { document.getElementById('step-verify').classList.add('hidden'); document.getElementById('step-set-password').classList.remove('hidden'); }
+        }
+        function setPassword() {
+            const p=document.getElementById('part-new-pass').value;
+            if(p.length<4) return showToast('Şifre kısa.','error');
+            let us=getData(DB_KEYS.USERS); const idx=us.findIndex(x=>x.sicil===tempSicil);
+            us[idx].password=p; saveData(DB_KEYS.USERS,us); showToast('Ayarlandı.'); loginUser(us[idx]);
+        }
+        function participantLogin() {
+            const p=document.getElementById('part-input-pass').value;
+            const u=getData(DB_KEYS.USERS).find(x=>x.sicil===tempSicil && x.password===p);
+            if(u) loginUser(u); else showToast('Hatalı şifre.','error');
+        }
+        function loginUser(u) {
+            localStorage.setItem(DB_KEYS.LOGGED_IN_USER, JSON.stringify(u));
+            hideAllSections(); document.getElementById('participant-dashboard').classList.remove('hidden');
+            document.getElementById('welcome-msg').textContent=`Hoş Geldiniz, ${u.name}`;
+            document.getElementById('welcome-info').textContent=`${u.departman} | ${u.email}`;
+            renderParticipantTrainings(u.sicil);
+        }
+
+        let currentAssignmentId=null;
+        function renderParticipantTrainings(sicil) {
+            const a=getData(DB_KEYS.ASSIGNMENTS).filter(x=>x.userSicil===sicil);
+            const b=document.getElementById('participant-training-list'); b.innerHTML='';
+            let c=0;
+            a.forEach(x=>{
+                if(x.completed) c++;
+                const tr=document.createElement('tr');
+                tr.innerHTML=`
+                    <td>${x.title}</td>
+                    <td>${x.completed?'Tamamlandı':'Devam ediyor'}</td>
+                    <td><div style="width:80px; background:#eee; height:5px; border-radius:5px;"><div style="width:${x.progress}%; background:${x.completed?'green':'orange'}; height:100%;"></div></div> %${x.progress}</td>
+                    <td><button onclick="openVideo('${x.id}')" style="width:auto;">${x.completed?'Tekrar':'İzle'}</button></td>
+                `;
+                b.appendChild(tr);
+            });
+            document.getElementById('participant-report-area').innerHTML=`
+                <h4>Durum</h4>
+                <div style="background:#f0f4f8; padding:15px; border-radius:8px;">
+                    <strong>Toplam:</strong> ${a.length} <br> <strong>Tamamlanan:</strong> ${c}
+                </div>`;
+        }
+
+        function openVideo(id) {
+            const a=getData(DB_KEYS.ASSIGNMENTS).find(x=>x.id===id); if(!a) return;
+            currentAssignmentId=id;
+            document.getElementById('modal-title').textContent=a.title;
+            document.getElementById('video-frame').src=a.embedUrl+"?autoplay=1";
+            document.getElementById('video-progress-bar').style.width=a.progress+'%';
+            document.getElementById('progress-text').textContent=a.progress+'%';
+            document.getElementById('complete-training-btn').disabled=a.progress<80;
+            document.getElementById('video-modal').classList.remove('hidden');
+        }
+        function closeVideoModal() { document.getElementById('video-modal').classList.add('hidden'); document.getElementById('video-frame').src=""; }
+        function simulateProgress(amount) {
+            let a=getData(DB_KEYS.ASSIGNMENTS);
+            const idx=a.findIndex(x=>x.id===currentAssignmentId);
+            if(idx>-1) {
+                let p=a[idx].progress+amount;
+                if(p>100)p=100;
+                a[idx].progress=p;
+                saveData(DB_KEYS.ASSIGNMENTS,a);
+                document.getElementById('video-progress-bar').style.width=p+'%';
+                document.getElementById('progress-text').textContent=p+'%';
+                if(p>=80) { document.getElementById('complete-training-btn').disabled=false; showToast('%80 tamamlandı.'); }
+            }
+        }
+        function completeTraining() {
+            let a=getData(DB_KEYS.ASSIGNMENTS);
+            const idx=a.findIndex(x=>x.id===currentAssignmentId);
+            if(idx>-1) {
+                a[idx].progress=100; a[idx].completed=true;
+                saveData(DB_KEYS.ASSIGNMENTS,a);
+                showToast('Tebrikler!'); closeVideoModal();
+                const u=JSON.parse(localStorage.getItem(DB_KEYS.LOGGED_IN_USER));
+                renderParticipantTrainings(u.sicil);
+            }
+        }
+
+        // --- SİSTEM SIFIRLAMA FONKSİYONU ---
+        function resetSystem() {
+            if(confirm("TÜM VERİLERİ SİLMEK İSTEDİĞİNİZE EMİN MİSİNİZ? Sayfa tamamen boşaltılacak.")) {
+                localStorage.clear(); // LocalStorage'ı komple temizler
+                alert("Sistem sıfırlandı. Sayfa yenileniyor...");
+                location.reload(); // Sayfayı yeniler
+            }
+        }
+
+    </script>
+</body>
+</html>
