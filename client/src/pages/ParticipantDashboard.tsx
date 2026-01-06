@@ -45,7 +45,7 @@ export default function ParticipantDashboard() {
   const [initialWatchedTime, setInitialWatchedTime] = useState<number>(0);
   const lastSaveTimeRef = useRef<number>(0);
 
-  const { data: videoProgress, refetch: refetchProgress } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
+  const { data: videoProgress, refetch: refetchProgress, isFetched: isProgressFetched } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
     queryKey: ["/api/video-progress", selectedTraining?.assignment.id],
     queryFn: async () => {
       const res = await fetch(`/api/video-progress/${selectedTraining?.assignment.id}`);
@@ -53,13 +53,15 @@ export default function ParticipantDashboard() {
       return res.json();
     },
     enabled: !!selectedTraining?.assignment.id,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   useEffect(() => {
-    if (videoProgress) {
+    if (videoProgress && isProgressFetched) {
       setInitialWatchedTime(videoProgress.watchedSeconds);
     }
-  }, [videoProgress]);
+  }, [videoProgress, isProgressFetched]);
 
   const saveProgressMutation = useMutation({
     mutationFn: async (data: { assignmentId: string; participantId: string; watchedSeconds: number; progressPercent: number }) => {
@@ -548,16 +550,20 @@ export default function ParticipantDashboard() {
               </Button>
             </div>
           </DialogHeader>
-          {selectedTraining && (
+          {selectedTraining && isProgressFetched ? (
             <VideoPlayer
               videoUrl={selectedTraining.training.videoUrl}
               onCanComplete={setCanComplete}
               assignmentId={selectedTraining.assignment.id}
-              initialWatchedTime={initialWatchedTime}
+              initialWatchedTime={videoProgress?.watchedSeconds || 0}
               onProgressChange={(progress, watchedTime) => 
                 saveVideoProgress(selectedTraining.assignment.id, progress, watchedTime)
               }
             />
+          ) : selectedTraining && (
+            <div className="aspect-video flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-white animate-spin" />
+            </div>
           )}
           {selectedTraining && !selectedTraining.assignment.completed && (
             <div className="p-4 bg-black/90 border-t border-white/10">
