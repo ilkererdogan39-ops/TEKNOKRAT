@@ -1,26 +1,39 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BarChart3, Users, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { BarChart3, Users, CheckCircle, Clock, TrendingUp, RefreshCw, Eye } from "lucide-react";
 import type { SafeParticipant, Training, TrainingAssignment } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export function Reports() {
-  const { data: participants = [], isLoading: loadingParticipants } = useQuery<SafeParticipant[]>({
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  const { data: participants = [], isLoading: loadingParticipants, dataUpdatedAt: participantsUpdatedAt } = useQuery<SafeParticipant[]>({
     queryKey: ["/api/participants"],
+    refetchInterval: 5000,
   });
 
-  const { data: trainings = [], isLoading: loadingTrainings } = useQuery<Training[]>({
+  const { data: trainings = [], isLoading: loadingTrainings, dataUpdatedAt: trainingsUpdatedAt } = useQuery<Training[]>({
     queryKey: ["/api/trainings"],
+    refetchInterval: 5000,
   });
 
-  const { data: assignments = [], isLoading: loadingAssignments } = useQuery<TrainingAssignment[]>({
+  const { data: assignments = [], isLoading: loadingAssignments, dataUpdatedAt: assignmentsUpdatedAt } = useQuery<TrainingAssignment[]>({
     queryKey: ["/api/assignments"],
+    refetchInterval: 5000,
   });
+
+  useEffect(() => {
+    const maxUpdatedAt = Math.max(participantsUpdatedAt || 0, trainingsUpdatedAt || 0, assignmentsUpdatedAt || 0);
+    if (maxUpdatedAt > 0) {
+      setLastUpdated(new Date(maxUpdatedAt));
+    }
+  }, [participantsUpdatedAt, trainingsUpdatedAt, assignmentsUpdatedAt]);
 
   const isLoading = loadingParticipants || loadingTrainings || loadingAssignments;
 
@@ -125,13 +138,25 @@ export function Reports() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Katılımcı Bazlı Rapor
-          </CardTitle>
-          <CardDescription>
-            Her katılımcının eğitim tamamlama durumu
-          </CardDescription>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Katılımcı Bazlı Rapor
+                <Badge variant="outline" className="ml-2 animate-pulse">
+                  <Eye className="h-3 w-3 mr-1" />
+                  Canlı
+                </Badge>
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Her katılımcının eğitim tamamlama durumu (5 saniyede bir güncellenir)
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR')}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {participants.length === 0 ? (
@@ -156,20 +181,46 @@ export function Reports() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {participants.map((participant) => {
+                  {[...participants]
+                    .sort((a, b) => {
+                      const reportA = getParticipantReport(a.id);
+                      const reportB = getParticipantReport(b.id);
+                      if (reportA.avgProgress > 0 && reportA.avgProgress < 100 && reportB.avgProgress === 0) return -1;
+                      if (reportB.avgProgress > 0 && reportB.avgProgress < 100 && reportA.avgProgress === 0) return 1;
+                      return reportB.avgProgress - reportA.avgProgress;
+                    })
+                    .map((participant) => {
                     const report = getParticipantReport(participant.id);
+                    const isActivelyWatching = report.avgProgress > 0 && report.avgProgress < 100 && report.pending > 0;
                     
                     return (
-                      <TableRow key={participant.id} data-testid={`report-row-${participant.id}`}>
+                      <TableRow 
+                        key={participant.id} 
+                        data-testid={`report-row-${participant.id}`}
+                        className={isActivelyWatching ? "bg-green-50 dark:bg-green-950/30" : ""}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
-                              <AvatarFallback className={`${getAvatarColor(participant.fullName)} text-white text-xs`}>
-                                {getInitials(participant.fullName)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                              <Avatar className="h-8 w-8">
+                                <AvatarFallback className={`${getAvatarColor(participant.fullName)} text-white text-xs`}>
+                                  {getInitials(participant.fullName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              {isActivelyWatching && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full animate-pulse" />
+                              )}
+                            </div>
                             <div>
-                              <p className="font-medium">{participant.fullName}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{participant.fullName}</p>
+                                {isActivelyWatching && (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300">
+                                    <Eye className="h-2 w-2 mr-1" />
+                                    İzliyor
+                                  </Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">{participant.employeeId}</p>
                             </div>
                           </div>
