@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft, Clock } from "lucide-react";
+import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft, Clock, Key } from "lucide-react";
 import type { Training, TrainingAssignment, Message, VideoWatchLog } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -27,6 +27,17 @@ const messageSchema = z.object({
   subject: z.string().min(1, "Konu gerekli"),
   content: z.string().min(1, "Mesaj içeriği gerekli"),
 });
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Mevcut şifre gerekli"),
+  newPassword: z.string().min(4, "Yeni şifre en az 4 karakter olmalı"),
+  confirmPassword: z.string().min(1, "Şifre tekrarı gerekli"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Şifreler eşleşmiyor",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
 interface AssignmentWithTraining {
   assignment: TrainingAssignment;
@@ -44,6 +55,7 @@ export default function ParticipantDashboard() {
   const [canComplete, setCanComplete] = useState(false);
   const [initialWatchedTime, setInitialWatchedTime] = useState<number>(0);
   const lastSaveTimeRef = useRef<number>(0);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
   const { data: videoProgress, refetch: refetchProgress, isFetched: isProgressFetched } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
     queryKey: ["/api/video-progress", selectedTraining?.assignment.id],
@@ -103,6 +115,30 @@ export default function ParticipantDashboard() {
   const form = useForm<MessageForm>({
     resolver: zodResolver(messageSchema),
     defaultValues: { subject: "", content: "" },
+  });
+
+  const passwordForm = useForm<ChangePasswordForm>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { participantId: string; currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/participants/change-password", data);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Şifre değiştirilemedi");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Başarılı", description: "Şifreniz değiştirildi." });
+      setShowPasswordDialog(false);
+      passwordForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({ title: "Hata", description: error.message, variant: "destructive" });
+    },
   });
 
   const { data: myTrainings = [], isLoading } = useQuery<AssignmentWithTraining[]>({
@@ -221,6 +257,14 @@ export default function ParticipantDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPasswordDialog(true)}
+              data-testid="button-change-password"
+            >
+              <Key className="h-4 w-4" />
+            </Button>
             <ThemeToggle />
             <Button 
               variant="destructive" 
@@ -607,6 +651,86 @@ export default function ParticipantDashboard() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="h-5 w-5" />
+              Şifre Değiştir
+            </DialogTitle>
+          </DialogHeader>
+          <Form {...passwordForm}>
+            <form 
+              onSubmit={passwordForm.handleSubmit((data) => {
+                if (session?.participantId) {
+                  changePasswordMutation.mutate({
+                    participantId: session.participantId,
+                    currentPassword: data.currentPassword,
+                    newPassword: data.newPassword,
+                  });
+                }
+              })} 
+              className="space-y-4"
+            >
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mevcut Şifre</FormLabel>
+                    <FormControl>
+                      <Input type="password" data-testid="input-current-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={passwordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Yeni Şifre</FormLabel>
+                    <FormControl>
+                      <Input type="password" data-testid="input-new-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={passwordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Yeni Şifre (Tekrar)</FormLabel>
+                    <FormControl>
+                      <Input type="password" data-testid="input-confirm-password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={changePasswordMutation.isPending}
+                data-testid="button-change-password-submit"
+              >
+                {changePasswordMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Değiştiriliyor...
+                  </>
+                ) : (
+                  "Şifreyi Değiştir"
+                )}
+              </Button>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
