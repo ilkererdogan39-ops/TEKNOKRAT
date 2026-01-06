@@ -11,35 +11,131 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Users, ArrowLeft, Loader2 } from "lucide-react";
+import { Users, ArrowLeft, Loader2, ArrowRight, KeyRound, CheckCircle } from "lucide-react";
 import type { SafeParticipant } from "@shared/schema";
 
-const loginSchema = z.object({
+const identifySchema = z.object({
+  employeeId: z.string().min(1, "Sicil numarası gerekli"),
   email: z.string().email("Geçerli bir e-posta giriniz"),
+});
+
+const passwordSchema = z.object({
+  password: z.string().min(4, "Şifre en az 4 karakter olmalı"),
+  confirmPassword: z.string().min(1, "Şifre tekrarı gerekli"),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Şifreler eşleşmiyor",
+  path: ["confirmPassword"],
+});
+
+const loginSchema = z.object({
   password: z.string().min(1, "Şifre gerekli"),
 });
 
+type IdentifyForm = z.infer<typeof identifySchema>;
+type PasswordForm = z.infer<typeof passwordSchema>;
 type LoginForm = z.infer<typeof loginSchema>;
+
+type Step = "identify" | "set-password" | "login";
 
 export default function ParticipantLogin() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<Step>("identify");
+  const [participantInfo, setParticipantInfo] = useState<{
+    participantId: string;
+    fullName: string;
+    employeeId: string;
+    email: string;
+  } | null>(null);
 
-  const form = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+  const identifyForm = useForm<IdentifyForm>({
+    resolver: zodResolver(identifySchema),
+    defaultValues: { employeeId: "", email: "" },
   });
 
-  const onSubmit = async (data: LoginForm) => {
+  const passwordForm = useForm<PasswordForm>({
+    resolver: zodResolver(passwordSchema),
+    defaultValues: { password: "", confirmPassword: "" },
+  });
+
+  const loginForm = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { password: "" },
+  });
+
+  const onIdentify = async (data: IdentifyForm) => {
+    setIsLoading(true);
+    try {
+      const response = await apiRequest("POST", "/api/participants/identify", data);
+      const result = await response.json();
+      
+      setParticipantInfo({
+        participantId: result.participantId,
+        fullName: result.fullName,
+        employeeId: data.employeeId,
+        email: data.email,
+      });
+      
+      if (result.hasPassword) {
+        setStep("login");
+      } else {
+        setStep("set-password");
+      }
+    } catch (error) {
+      toast({
+        title: "Katılımcı Bulunamadı",
+        description: "Sicil numarası veya e-posta hatalı.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const onSetPassword = async (data: PasswordForm) => {
+    if (!participantInfo) return;
     setIsLoading(true);
     
     try {
-      const response = await apiRequest("POST", "/api/participants/login", data);
+      await apiRequest("POST", "/api/participants/set-password", {
+        participantId: participantInfo.participantId,
+        password: data.password,
+      });
+      
+      const loginResponse = await apiRequest("POST", "/api/participants/login", {
+        employeeId: participantInfo.employeeId,
+        email: participantInfo.email,
+        password: data.password,
+      });
+      const participant: SafeParticipant = await loginResponse.json();
+      
+      login({ role: "participant", participantId: participant.id }, participant);
+      toast({
+        title: "Şifre Belirlendi",
+        description: `Hoş geldiniz, ${participant.fullName}!`,
+      });
+      setLocation("/participant/dashboard");
+    } catch (error) {
+      toast({
+        title: "Hata",
+        description: "Şifre belirlenirken bir hata oluştu.",
+        variant: "destructive",
+      });
+    }
+    setIsLoading(false);
+  };
+
+  const onLogin = async (data: LoginForm) => {
+    if (!participantInfo) return;
+    setIsLoading(true);
+    
+    try {
+      const response = await apiRequest("POST", "/api/participants/login", {
+        employeeId: participantInfo.employeeId,
+        email: participantInfo.email,
+        password: data.password,
+      });
       const participant: SafeParticipant = await response.json();
       
       login({ role: "participant", participantId: participant.id }, participant);
@@ -51,12 +147,18 @@ export default function ParticipantLogin() {
     } catch (error) {
       toast({
         title: "Giriş Başarısız",
-        description: "E-posta veya şifre hatalı.",
+        description: "Şifre hatalı.",
         variant: "destructive",
       });
     }
-    
     setIsLoading(false);
+  };
+
+  const resetToIdentify = () => {
+    setStep("identify");
+    setParticipantInfo(null);
+    passwordForm.reset();
+    loginForm.reset();
   };
 
   return (
@@ -68,82 +170,220 @@ export default function ParticipantLogin() {
       <Card className="w-full max-w-md bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto p-3 bg-primary/10 rounded-xl">
-            <Users className="h-8 w-8 text-primary" />
+            {step === "identify" && <Users className="h-8 w-8 text-primary" />}
+            {step === "set-password" && <KeyRound className="h-8 w-8 text-primary" />}
+            {step === "login" && <CheckCircle className="h-8 w-8 text-primary" />}
           </div>
-          <CardTitle className="text-2xl font-semibold">Katılımcı Girişi</CardTitle>
+          <CardTitle className="text-2xl font-semibold">
+            {step === "identify" && "Katılımcı Girişi"}
+            {step === "set-password" && "Şifre Belirleme"}
+            {step === "login" && "Hoş Geldiniz"}
+          </CardTitle>
           <CardDescription>
-            Eğitimlerinize erişmek için giriş yapın
+            {step === "identify" && "Sicil numaranız ve e-posta adresinizi giriniz"}
+            {step === "set-password" && `${participantInfo?.fullName}, ilk girişiniz için bir şifre belirleyin`}
+            {step === "login" && `${participantInfo?.fullName}, şifrenizi giriniz`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>E-Posta</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email"
-                        placeholder="E-posta adresinizi giriniz" 
-                        data-testid="input-participant-email"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Şifre</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Şifrenizi giriniz"
-                        data-testid="input-participant-password"
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {step === "identify" && (
+            <Form {...identifyForm}>
+              <form onSubmit={identifyForm.handleSubmit(onIdentify)} className="space-y-6">
+                <FormField
+                  control={identifyForm.control}
+                  name="employeeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sicil Numarası</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Sicil numaranızı giriniz" 
+                          data-testid="input-employee-id"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={identifyForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>E-Posta</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email"
+                          placeholder="E-posta adresinizi giriniz" 
+                          data-testid="input-participant-email"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading}
-                data-testid="button-participant-login"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Giriş yapılıyor...
-                  </>
-                ) : (
-                  "Giriş Yap"
-                )}
-              </Button>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                  data-testid="button-identify"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Kontrol ediliyor...
+                    </>
+                  ) : (
+                    <>
+                      Devam Et
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
 
-              <Button 
-                type="button"
-                variant="ghost" 
-                className="w-full"
-                onClick={() => setLocation("/")}
-                data-testid="button-back-home"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Ana Sayfaya Dön
-              </Button>
-            </form>
-          </Form>
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => setLocation("/")}
+                  data-testid="button-back-home"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Ana Sayfaya Dön
+                </Button>
+              </form>
+            </Form>
+          )}
+
+          {step === "set-password" && (
+            <Form {...passwordForm}>
+              <form onSubmit={passwordForm.handleSubmit(onSetPassword)} className="space-y-6">
+                <FormField
+                  control={passwordForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Yeni Şifre</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="En az 4 karakter"
+                          data-testid="input-new-password"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={passwordForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şifre Tekrar</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Şifrenizi tekrar giriniz"
+                          data-testid="input-confirm-password"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                  data-testid="button-set-password"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      Şifreyi Belirle ve Giriş Yap
+                      <CheckCircle className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={resetToIdentify}
+                  data-testid="button-back-identify"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Geri Dön
+                </Button>
+              </form>
+            </Form>
+          )}
+
+          {step === "login" && (
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-6">
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Şifre</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Şifrenizi giriniz"
+                          data-testid="input-participant-password"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={isLoading}
+                  data-testid="button-participant-login"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Giriş yapılıyor...
+                    </>
+                  ) : (
+                    "Giriş Yap"
+                  )}
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={resetToIdentify}
+                  data-testid="button-back-identify"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Farklı Hesapla Giriş Yap
+                </Button>
+              </form>
+            </Form>
+          )}
         </CardContent>
       </Card>
     </div>

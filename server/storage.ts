@@ -16,8 +16,10 @@ export interface IStorage {
   getParticipants(): Promise<Participant[]>;
   getParticipant(id: string): Promise<Participant | undefined>;
   getParticipantByEmail(email: string): Promise<Participant | undefined>;
+  getParticipantByEmployeeIdAndEmail(employeeId: string, email: string): Promise<Participant | undefined>;
   createParticipant(participant: InsertParticipant): Promise<Participant>;
   updateParticipant(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined>;
+  setParticipantPassword(id: string, password: string): Promise<Participant | undefined>;
   deleteParticipant(id: string): Promise<boolean>;
   
   // Trainings
@@ -80,9 +82,20 @@ export class MemStorage implements IStorage {
     return Array.from(this.participants.values()).find(p => p.email === email);
   }
 
+  async getParticipantByEmployeeIdAndEmail(employeeId: string, email: string): Promise<Participant | undefined> {
+    return Array.from(this.participants.values()).find(
+      p => p.employeeId === employeeId && p.email === email
+    );
+  }
+
   async createParticipant(data: InsertParticipant): Promise<Participant> {
     const id = randomUUID();
-    const participant: Participant = { ...data, id };
+    const participant: Participant = { 
+      ...data, 
+      id,
+      password: data.password || null,
+      hasPassword: !!data.password
+    };
     this.participants.set(id, participant);
     return participant;
   }
@@ -92,6 +105,22 @@ export class MemStorage implements IStorage {
     if (!existing) return undefined;
     
     const updated: Participant = { ...existing, ...data };
+    if (data.password) {
+      updated.hasPassword = true;
+    }
+    this.participants.set(id, updated);
+    return updated;
+  }
+
+  async setParticipantPassword(id: string, password: string): Promise<Participant | undefined> {
+    const existing = this.participants.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Participant = { 
+      ...existing, 
+      password,
+      hasPassword: true
+    };
     this.participants.set(id, updated);
     return updated;
   }

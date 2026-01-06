@@ -7,14 +7,20 @@ A Corporate Training Management System built in Turkish. The platform enables or
 
 ### Admin Panel
 - **User Management**: Create, edit, delete participants with employee ID, name, department, email
-- **CSV Import**: Bulk import participants from CSV files
+- **CSV Import**: Bulk import participants from CSV files (supports Turkish characters with Windows-1254/UTF-8 encoding)
 - **Training Assignment**: Create video trainings (YouTube/Vimeo) and assign to multiple participants
 - **Reports**: View completion statistics per participant and per training
+- **Messages**: View and reply to participant messages
+
+### Future Enhancements (Not Yet Implemented)
+- **Email Notifications**: Send email when trainings are assigned (requires SMTP or Resend integration)
 
 ### Participant Panel
+- **Two-Step Login**: Enter employee ID + email, then set password (first time) or login (returning)
 - **Training Dashboard**: View assigned trainings with thumbnails and progress
 - **Video Player**: Watch embedded training videos
 - **Completion Tracking**: Mark trainings as complete with progress tracking
+- **Messaging**: Send messages to admin and view replies
 
 ## Technical Stack
 
@@ -42,8 +48,10 @@ A Corporate Training Management System built in Turkish. The platform enables or
 ### API Endpoints
 - `GET/POST /api/participants` - List/create participants
 - `PATCH/DELETE /api/participants/:id` - Update/delete participant
-- `POST /api/participants/login` - Participant authentication
-- `POST /api/participants/import` - CSV import
+- `POST /api/participants/identify` - Identify participant by employee ID + email
+- `POST /api/participants/set-password` - Set password for first-time users
+- `POST /api/participants/login` - Participant login with password
+- `POST /api/participants/import` - CSV import (no password required, users set on first login)
 - `GET /api/trainings` - List trainings
 - `POST /api/trainings/assign` - Create and assign training
 - `DELETE /api/trainings/:id` - Delete training

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, type Participant } from "@shared/schema";
+import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, identifyParticipantSchema, setPasswordSchema, type Participant } from "@shared/schema";
 import { z } from "zod";
 
 // Helper to strip password from participant response
@@ -104,19 +104,74 @@ export async function registerRoutes(
     }
   });
 
-  // Participant login
+  // Participant identify (step 1 of login)
+  app.post("/api/participants/identify", async (req, res) => {
+    try {
+      const data = identifyParticipantSchema.parse(req.body);
+      const participant = await storage.getParticipantByEmployeeIdAndEmail(data.employeeId, data.email);
+      
+      if (!participant) {
+        return res.status(404).json({ error: "Katılımcı bulunamadı" });
+      }
+      
+      res.json({ 
+        participantId: participant.id, 
+        hasPassword: participant.hasPassword,
+        fullName: participant.fullName
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Kimlik doğrulama hatası" });
+    }
+  });
+
+  // Set password (for first-time users)
+  app.post("/api/participants/set-password", async (req, res) => {
+    try {
+      const data = setPasswordSchema.parse(req.body);
+      const participant = await storage.getParticipant(data.participantId);
+      
+      if (!participant) {
+        return res.status(404).json({ error: "Katılımcı bulunamadı" });
+      }
+      
+      if (participant.hasPassword) {
+        return res.status(400).json({ error: "Şifre zaten belirlenmiş" });
+      }
+      
+      const updated = await storage.setParticipantPassword(data.participantId, data.password);
+      if (!updated) {
+        return res.status(500).json({ error: "Şifre kaydedilemedi" });
+      }
+      
+      res.json(sanitizeParticipant(updated));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Şifre belirleme hatası" });
+    }
+  });
+
+  // Participant login (step 2 for returning users)
   app.post("/api/participants/login", async (req, res) => {
     try {
-      const { email, password } = req.body;
-      const participant = await storage.getParticipantByEmail(email);
+      const { employeeId, email, password } = req.body;
+      const participant = await storage.getParticipantByEmployeeIdAndEmail(employeeId, email);
       
-      if (!participant || participant.password !== password) {
-        return res.status(401).json({ error: "Invalid credentials" });
+      if (!participant) {
+        return res.status(404).json({ error: "Katılımcı bulunamadı" });
+      }
+      
+      if (!participant.hasPassword || participant.password !== password) {
+        return res.status(401).json({ error: "Geçersiz şifre" });
       }
       
       res.json(sanitizeParticipant(participant));
     } catch (error) {
-      res.status(500).json({ error: "Login failed" });
+      res.status(500).json({ error: "Giriş hatası" });
     }
   });
 
@@ -139,12 +194,11 @@ export async function registerRoutes(
         const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ""));
         
         if (values.length >= 4) {
-          // Support both 4 columns (auto-generate password) and 5 columns
+          // Support 4 columns (no password - user will set on first login)
           const employeeId = values[0] || "";
           const fullName = values[1] || "";
           const department = values[2] || "";
           const email = values[3] || "";
-          const password = values[4] || "1234"; // Default password if not provided
           
           if (!employeeId || !fullName || !department || !email) {
             continue; // Skip invalid rows
@@ -156,7 +210,7 @@ export async function registerRoutes(
               fullName,
               department,
               email,
-              password
+              // No password - user will set on first login
             });
             
             const existing = await storage.getParticipantByEmail(data.email);

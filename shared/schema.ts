@@ -10,7 +10,8 @@ export interface Participant {
   fullName: string;
   department: string;
   email: string;
-  password: string;
+  password: string | null;
+  hasPassword: boolean;
 }
 
 // Safe participant without password (for API responses)
@@ -21,10 +22,26 @@ export const insertParticipantSchema = z.object({
   fullName: z.string().min(1, "Ad soyad gerekli"),
   department: z.string().min(1, "Departman gerekli"),
   email: z.string().email("Geçerli e-posta gerekli"),
-  password: z.string().min(4, "Şifre en az 4 karakter olmalı"),
+  password: z.string().min(4, "Şifre en az 4 karakter olmalı").optional(),
 });
 
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
+
+// Schema for identifying participant
+export const identifyParticipantSchema = z.object({
+  employeeId: z.string().min(1, "Sicil no gerekli"),
+  email: z.string().email("Geçerli e-posta gerekli"),
+});
+
+export type IdentifyParticipant = z.infer<typeof identifyParticipantSchema>;
+
+// Schema for setting password
+export const setPasswordSchema = z.object({
+  participantId: z.string().min(1),
+  password: z.string().min(4, "Şifre en az 4 karakter olmalı"),
+});
+
+export type SetPassword = z.infer<typeof setPasswordSchema>;
 
 // Training schema
 export interface Training {
