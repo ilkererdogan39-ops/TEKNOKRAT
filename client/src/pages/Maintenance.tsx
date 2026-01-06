@@ -1,7 +1,11 @@
-import { GraduationCap, Wrench } from "lucide-react";
+import { useLocation } from "wouter";
+import { GraduationCap, Wrench, Home } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 
 export default function Maintenance() {
+  const [, setLocation] = useLocation();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
       <div className="absolute top-4 right-4">
@@ -35,6 +39,16 @@ export default function Maintenance() {
             Herhangi bir sorunuz için yöneticinizle iletişime geçebilirsiniz.
           </p>
         </div>
+
+        <Button
+          variant="outline"
+          className="mt-8 bg-white/10 border-white/30 text-white hover:bg-white/20"
+          onClick={() => setLocation("/")}
+          data-testid="button-home"
+        >
+          <Home className="h-4 w-4 mr-2" />
+          Ana Ekrana Dön
+        </Button>
       </div>
     </div>
   );
