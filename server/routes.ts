@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, identifyParticipantSchema, setPasswordSchema, saveVideoProgressSchema, type Participant } from "@shared/schema";
+import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, identifyParticipantSchema, setPasswordSchema, saveVideoProgressSchema, changePasswordSchema, resetParticipantPasswordSchema, ADMIN_CREDENTIALS, type Participant } from "@shared/schema";
 import { z } from "zod";
 
 // Helper to strip password from participant response
@@ -170,6 +170,81 @@ export async function registerRoutes(
       }
       
       res.json(sanitizeParticipant(participant));
+    } catch (error) {
+      res.status(500).json({ error: "Giriş hatası" });
+    }
+  });
+
+  // Participant change password
+  app.post("/api/participants/change-password", async (req, res) => {
+    try {
+      const { participantId, currentPassword, newPassword } = req.body;
+      changePasswordSchema.parse({ currentPassword, newPassword });
+      
+      const updated = await storage.changeParticipantPassword(participantId, currentPassword, newPassword);
+      if (!updated) {
+        return res.status(401).json({ error: "Mevcut şifre yanlış" });
+      }
+      
+      res.json(sanitizeParticipant(updated));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Şifre değiştirme hatası" });
+    }
+  });
+
+  // Admin reset participant password
+  app.post("/api/participants/reset-password", async (req, res) => {
+    try {
+      const data = resetParticipantPasswordSchema.parse(req.body);
+      const updated = await storage.setParticipantPassword(data.participantId, data.newPassword);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Katılımcı bulunamadı" });
+      }
+      
+      res.json(sanitizeParticipant(updated));
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Şifre sıfırlama hatası" });
+    }
+  });
+
+  // Admin password state (stored in memory for this session)
+  let adminPassword = ADMIN_CREDENTIALS.password;
+
+  // Admin change password
+  app.post("/api/admin/change-password", async (req, res) => {
+    try {
+      const data = changePasswordSchema.parse(req.body);
+      
+      if (data.currentPassword !== adminPassword) {
+        return res.status(401).json({ error: "Mevcut şifre yanlış" });
+      }
+      
+      adminPassword = data.newPassword;
+      res.json({ success: true, message: "Şifre başarıyla değiştirildi" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Şifre değiştirme hatası" });
+    }
+  });
+
+  // Admin login (updated to use dynamic password)
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (username === ADMIN_CREDENTIALS.username && password === adminPassword) {
+        res.json({ success: true });
+      } else {
+        res.status(401).json({ error: "Geçersiz kullanıcı adı veya şifre" });
+      }
     } catch (error) {
       res.status(500).json({ error: "Giriş hatası" });
     }

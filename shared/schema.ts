@@ -152,6 +152,20 @@ export const replyMessageSchema = z.object({
   reply: z.string().min(1, "Yanıt gerekli"),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Mevcut şifre gerekli"),
+  newPassword: z.string().min(4, "Yeni şifre en az 4 karakter olmalı"),
+});
+
+export type ChangePassword = z.infer<typeof changePasswordSchema>;
+
+export const resetParticipantPasswordSchema = z.object({
+  participantId: z.string().min(1),
+  newPassword: z.string().min(4, "Yeni şifre en az 4 karakter olmalı"),
+});
+
+export type ResetParticipantPassword = z.infer<typeof resetParticipantPasswordSchema>;
+
 export type ReplyMessage = z.infer<typeof replyMessageSchema>;
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });

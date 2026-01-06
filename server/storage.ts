@@ -28,6 +28,7 @@ export interface IStorage {
   createParticipant(participant: InsertParticipant): Promise<Participant>;
   updateParticipant(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined>;
   setParticipantPassword(id: string, password: string): Promise<Participant | undefined>;
+  changeParticipantPassword(id: string, currentPassword: string, newPassword: string): Promise<Participant | undefined>;
   deleteParticipant(id: string): Promise<boolean>;
   
   getTrainings(): Promise<Training[]>;
@@ -123,6 +124,18 @@ export class DatabaseStorage implements IStorage {
   async setParticipantPassword(id: string, password: string): Promise<Participant | undefined> {
     const result = await db.update(participants)
       .set({ password, hasPassword: true })
+      .where(eq(participants.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async changeParticipantPassword(id: string, currentPassword: string, newPassword: string): Promise<Participant | undefined> {
+    const participant = await this.getParticipant(id);
+    if (!participant || participant.password !== currentPassword) {
+      return undefined;
+    }
+    const result = await db.update(participants)
+      .set({ password: newPassword })
       .where(eq(participants.id, id))
       .returning();
     return result[0];
