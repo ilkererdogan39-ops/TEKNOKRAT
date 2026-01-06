@@ -49,6 +49,17 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
+export const videoWatchLogs = pgTable("video_watch_logs", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  assignmentId: varchar("assignment_id", { length: 36 }).notNull(),
+  participantId: varchar("participant_id", { length: 36 }).notNull(),
+  watchedSeconds: integer("watched_seconds").notNull().default(0),
+  progressPercent: integer("progress_percent").notNull().default(0),
+  totalDuration: integer("total_duration"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export type Participant = typeof participants.$inferSelect;
 export type InsertParticipantDB = typeof participants.$inferInsert;
 export type Training = typeof trainings.$inferSelect;
@@ -59,6 +70,8 @@ export type Message = typeof messages.$inferSelect;
 export type InsertMessageDB = typeof messages.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUserDB = typeof users.$inferInsert;
+export type VideoWatchLog = typeof videoWatchLogs.$inferSelect;
+export type InsertVideoWatchLogDB = typeof videoWatchLogs.$inferInsert;
 
 export type SafeParticipant = Omit<Participant, "password">;
 
@@ -144,3 +157,13 @@ export type ReplyMessage = z.infer<typeof replyMessageSchema>;
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export const saveVideoProgressSchema = z.object({
+  assignmentId: z.string().min(1),
+  participantId: z.string().min(1),
+  watchedSeconds: z.number().min(0),
+  progressPercent: z.number().min(0).max(100),
+  totalDuration: z.number().optional(),
+});
+
+export type SaveVideoProgress = z.infer<typeof saveVideoProgressSchema>;

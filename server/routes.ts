@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, identifyParticipantSchema, setPasswordSchema, type Participant } from "@shared/schema";
+import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, identifyParticipantSchema, setPasswordSchema, saveVideoProgressSchema, type Participant } from "@shared/schema";
 import { z } from "zod";
 
 // Helper to strip password from participant response
@@ -380,6 +380,42 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to reset data" });
+    }
+  });
+
+  // Video Progress Endpoints
+  app.get("/api/video-progress/:assignmentId", async (req, res) => {
+    try {
+      const progress = await storage.getVideoProgress(req.params.assignmentId);
+      if (!progress) {
+        return res.json({ watchedSeconds: 0, progressPercent: 0 });
+      }
+      res.json(progress);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch video progress" });
+    }
+  });
+
+  app.post("/api/video-progress", async (req, res) => {
+    try {
+      const data = saveVideoProgressSchema.parse(req.body);
+      const progress = await storage.saveVideoProgress(data);
+      await storage.updateAssignmentProgress(data.assignmentId, data.progressPercent);
+      res.json(progress);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to save video progress" });
+    }
+  });
+
+  app.get("/api/video-progress/:assignmentId/logs", async (req, res) => {
+    try {
+      const logs = await storage.getVideoWatchLogs(req.params.assignmentId);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch video logs" });
     }
   });
 

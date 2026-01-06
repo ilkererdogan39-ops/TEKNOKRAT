@@ -8,11 +8,14 @@ import {
   type InsertMessage,
   type User,
   type InsertUser,
+  type VideoWatchLog,
+  type SaveVideoProgress,
   participants,
   trainings,
   trainingAssignments,
   messages,
-  users
+  users,
+  videoWatchLogs
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -52,6 +55,11 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  getVideoProgress(assignmentId: string): Promise<VideoWatchLog | undefined>;
+  saveVideoProgress(data: SaveVideoProgress): Promise<VideoWatchLog>;
+  getVideoWatchLogs(assignmentId: string): Promise<VideoWatchLog[]>;
+  updateAssignmentProgress(assignmentId: string, progress: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -228,6 +236,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async resetAll(): Promise<void> {
+    await db.delete(videoWatchLogs);
     await db.delete(trainingAssignments);
     await db.delete(messages);
     await db.delete(trainings);
@@ -248,6 +257,52 @@ export class DatabaseStorage implements IStorage {
   async createUser(data: InsertUser): Promise<User> {
     const result = await db.insert(users).values(data).returning();
     return result[0];
+  }
+
+  async getVideoProgress(assignmentId: string): Promise<VideoWatchLog | undefined> {
+    const result = await db.select().from(videoWatchLogs)
+      .where(eq(videoWatchLogs.assignmentId, assignmentId))
+      .orderBy(desc(videoWatchLogs.updatedAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async saveVideoProgress(data: SaveVideoProgress): Promise<VideoWatchLog> {
+    const existing = await this.getVideoProgress(data.assignmentId);
+    
+    if (existing) {
+      const result = await db.update(videoWatchLogs)
+        .set({
+          watchedSeconds: data.watchedSeconds,
+          progressPercent: data.progressPercent,
+          totalDuration: data.totalDuration,
+          updatedAt: new Date(),
+        })
+        .where(eq(videoWatchLogs.id, existing.id))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db.insert(videoWatchLogs).values({
+        assignmentId: data.assignmentId,
+        participantId: data.participantId,
+        watchedSeconds: data.watchedSeconds,
+        progressPercent: data.progressPercent,
+        totalDuration: data.totalDuration,
+      }).returning();
+      return result[0];
+    }
+  }
+
+  async getVideoWatchLogs(assignmentId: string): Promise<VideoWatchLog[]> {
+    return await db.select().from(videoWatchLogs)
+      .where(eq(videoWatchLogs.assignmentId, assignmentId))
+      .orderBy(desc(videoWatchLogs.updatedAt));
+  }
+
+  async updateAssignmentProgress(assignmentId: string, progress: number): Promise<void> {
+    await db.update(trainingAssignments)
+      .set({ progress: Math.round(progress) })
+      .where(eq(trainingAssignments.id, assignmentId));
   }
 }
 
