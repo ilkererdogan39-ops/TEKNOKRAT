@@ -159,29 +159,30 @@ export function Reports() {
           </div>
         </CardHeader>
         <CardContent>
-          {participants.length === 0 ? (
+          {assignments.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Henüz veri yok</h3>
+              <h3 className="text-lg font-medium mb-2">Henüz eğitim atanmamış</h3>
               <p className="text-muted-foreground">
-                Katılımcı ve eğitim ekleyerek başlayın.
+                Katılımcılara eğitim atayarak başlayın.
               </p>
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="font-semibold">Katılımcı</TableHead>
-                    <TableHead className="font-semibold hidden md:table-cell">Departman</TableHead>
-                    <TableHead className="font-semibold text-center">Atanan</TableHead>
-                    <TableHead className="font-semibold text-center">Tamamlanan</TableHead>
                     <TableHead className="font-semibold">Video İlerlemesi</TableHead>
-                    <TableHead className="font-semibold">Tamamlanma</TableHead>
+                    <TableHead className="font-semibold hidden sm:table-cell">Durum</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {[...participants]
+                    .filter(p => {
+                      const report = getParticipantReport(p.id);
+                      return report.total > 0;
+                    })
                     .sort((a, b) => {
                       const reportA = getParticipantReport(a.id);
                       const reportB = getParticipantReport(b.id);
@@ -200,7 +201,7 @@ export function Reports() {
                         className={isActivelyWatching ? "bg-green-50 dark:bg-green-950/30" : ""}
                       >
                         <TableCell>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             <div className="relative">
                               <Avatar className="h-8 w-8">
                                 <AvatarFallback className={`${getAvatarColor(participant.fullName)} text-white text-xs`}>
@@ -212,43 +213,40 @@ export function Reports() {
                               )}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium">{participant.fullName}</p>
-                                {isActivelyWatching && (
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300">
-                                    <Eye className="h-2 w-2 mr-1" />
-                                    İzliyor
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground">{participant.employeeId}</p>
+                              <p className="font-medium text-sm">{participant.fullName}</p>
+                              <p className="text-xs text-muted-foreground">{participant.department}</p>
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{participant.department}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline">{report.total}</Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={report.completed === report.total && report.total > 0 ? "default" : "secondary"}>
-                            {report.completed}
-                          </Badge>
-                        </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-3 min-w-[120px]">
-                            <Progress value={report.avgProgress} className="h-2 flex-1" />
-                            <span className="text-sm font-medium w-12 text-right">
+                          <div className="flex items-center gap-2">
+                            <Progress value={report.avgProgress} className="h-3 flex-1 min-w-[80px]" />
+                            <span className={`text-lg font-bold min-w-[50px] text-right ${
+                              report.avgProgress >= 90 ? 'text-green-600 dark:text-green-400' : 
+                              report.avgProgress > 0 ? 'text-blue-600 dark:text-blue-400' : 
+                              'text-muted-foreground'
+                            }`}>
                               %{report.avgProgress}
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3 min-w-[120px]">
-                            <Progress value={report.rate} className="h-2 flex-1" />
-                            <span className="text-sm font-medium w-12 text-right">
-                              %{report.rate}
-                            </span>
-                          </div>
+                        <TableCell className="hidden sm:table-cell">
+                          {report.completed === report.total && report.total > 0 ? (
+                            <Badge className="bg-green-500">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Tamamlandı
+                            </Badge>
+                          ) : isActivelyWatching ? (
+                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300">
+                              <Eye className="h-3 w-3 mr-1" />
+                              İzliyor
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              <Clock className="h-3 w-3 mr-1" />
+                              Beklemede
+                            </Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
