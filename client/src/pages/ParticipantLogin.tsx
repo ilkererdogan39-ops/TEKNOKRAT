@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Users, ArrowLeft, Loader2, ArrowRight, KeyRound, CheckCircle } from "lucide-react";
 import type { SafeParticipant } from "@shared/schema";
+
+const SAVED_CREDENTIALS_KEY = "lms_participant_credentials";
 
 const identifySchema = z.object({
   employeeId: z.string().min(1, "Sicil numarası gerekli"),
@@ -35,14 +37,14 @@ type IdentifyForm = z.infer<typeof identifySchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 type LoginForm = z.infer<typeof loginSchema>;
 
-type Step = "identify" | "set-password" | "login";
+type Step = "identify" | "set-password" | "login" | "checking";
 
 export default function ParticipantLogin() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<Step>("identify");
+  const [step, setStep] = useState<Step>("checking");
   const [participantInfo, setParticipantInfo] = useState<{
     participantId: string;
     fullName: string;
@@ -64,6 +66,44 @@ export default function ParticipantLogin() {
     resolver: zodResolver(loginSchema),
     defaultValues: { password: "" },
   });
+
+  // Check for saved credentials on mount
+  useEffect(() => {
+    const checkSavedCredentials = async () => {
+      try {
+        const saved = localStorage.getItem(SAVED_CREDENTIALS_KEY);
+        if (saved) {
+          const { employeeId, email } = JSON.parse(saved);
+          const response = await apiRequest("POST", "/api/participants/identify", { employeeId, email });
+          const result = await response.json();
+          
+          if (result.hasPassword) {
+            setParticipantInfo({
+              participantId: result.participantId,
+              fullName: result.fullName,
+              employeeId,
+              email,
+            });
+            setStep("login");
+            return;
+          }
+        }
+      } catch {
+        localStorage.removeItem(SAVED_CREDENTIALS_KEY);
+      }
+      setStep("identify");
+    };
+    
+    checkSavedCredentials();
+  }, []);
+
+  const saveCredentials = (employeeId: string, email: string) => {
+    localStorage.setItem(SAVED_CREDENTIALS_KEY, JSON.stringify({ employeeId, email }));
+  };
+
+  const clearSavedCredentials = () => {
+    localStorage.removeItem(SAVED_CREDENTIALS_KEY);
+  };
 
   const onIdentify = async (data: IdentifyForm) => {
     setIsLoading(true);
@@ -110,6 +150,7 @@ export default function ParticipantLogin() {
       });
       const participant: SafeParticipant = await loginResponse.json();
       
+      saveCredentials(participantInfo.employeeId, participantInfo.email);
       login({ role: "participant", participantId: participant.id }, participant);
       toast({
         title: "Şifre Belirlendi",
@@ -138,6 +179,7 @@ export default function ParticipantLogin() {
       });
       const participant: SafeParticipant = await response.json();
       
+      saveCredentials(participantInfo.employeeId, participantInfo.email);
       login({ role: "participant", participantId: participant.id }, participant);
       toast({
         title: "Giriş Başarılı",
@@ -155,6 +197,7 @@ export default function ParticipantLogin() {
   };
 
   const resetToIdentify = () => {
+    clearSavedCredentials();
     setStep("identify");
     setParticipantInfo(null);
     passwordForm.reset();
@@ -170,16 +213,19 @@ export default function ParticipantLogin() {
       <Card className="w-full max-w-md bg-card">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto p-3 bg-primary/10 rounded-xl">
+            {step === "checking" && <Loader2 className="h-8 w-8 text-primary animate-spin" />}
             {step === "identify" && <Users className="h-8 w-8 text-primary" />}
             {step === "set-password" && <KeyRound className="h-8 w-8 text-primary" />}
             {step === "login" && <CheckCircle className="h-8 w-8 text-primary" />}
           </div>
           <CardTitle className="text-2xl font-semibold">
+            {step === "checking" && "Kontrol Ediliyor..."}
             {step === "identify" && "Katılımcı Girişi"}
             {step === "set-password" && "Şifre Belirleme"}
             {step === "login" && "Hoş Geldiniz"}
           </CardTitle>
           <CardDescription>
+            {step === "checking" && "Lütfen bekleyin..."}
             {step === "identify" && "Sicil numaranız ve e-posta adresinizi giriniz"}
             {step === "set-password" && `${participantInfo?.fullName}, ilk girişiniz için bir şifre belirleyin`}
             {step === "login" && `${participantInfo?.fullName}, şifrenizi giriniz`}
