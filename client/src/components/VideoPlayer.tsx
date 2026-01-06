@@ -50,9 +50,18 @@ interface VimeoPlayer {
 interface VideoPlayerProps {
   videoUrl: string;
   onCanComplete: (canComplete: boolean) => void;
+  assignmentId?: string;
+  onProgressChange?: (progress: number, watchedTime: number) => void;
+  initialWatchedTime?: number;
 }
 
-export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProps) {
+export default function VideoPlayer({ 
+  videoUrl, 
+  onCanComplete, 
+  assignmentId,
+  onProgressChange,
+  initialWatchedTime = 0 
+}: VideoPlayerProps) {
   const playerRef = useRef<YTPlayer | null>(null);
   const vimeoPlayerRef = useRef<VimeoPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -62,6 +71,11 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
   const wasPlayingRef = useRef(false);
   const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const durationRef = useRef(0);
+  const onProgressChangeRef = useRef(onProgressChange);
+  
+  useEffect(() => {
+    onProgressChangeRef.current = onProgressChange;
+  }, [onProgressChange]);
   const [progress, setProgress] = useState(0);
   const [isYouTube, setIsYouTube] = useState(false);
   const [isVimeo, setIsVimeo] = useState(false);
@@ -83,8 +97,8 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
     
     setIsYouTube(!!youtubeId);
     setIsVimeo(!!vimeoId);
-    maxWatchedTimeRef.current = 0;
-    lastPlaybackTimeRef.current = 0;
+    maxWatchedTimeRef.current = initialWatchedTime;
+    lastPlaybackTimeRef.current = initialWatchedTime;
     wasPlayingRef.current = false;
     durationRef.current = 0;
     setProgress(0);
@@ -137,6 +151,9 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
           events: {
             onReady: (event) => {
               durationRef.current = event.target.getDuration();
+              if (initialWatchedTime > 0) {
+                event.target.seekTo(initialWatchedTime, true);
+              }
               startTracking();
             },
             onStateChange: (event) => {
@@ -189,6 +206,10 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
               ? Math.min((maxWatchedTimeRef.current / totalDuration) * 100, 100)
               : 0;
             setProgress(progressPercent);
+            
+            if (onProgressChangeRef.current) {
+              onProgressChangeRef.current(progressPercent, maxWatchedTimeRef.current);
+            }
 
             if (progressPercent >= 90) {
               setIsComplete(true);
@@ -233,6 +254,9 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
           
           vimeoPlayerRef.current.getDuration().then(dur => {
             durationRef.current = dur;
+            if (initialWatchedTime > 0) {
+              vimeoPlayerRef.current?.setCurrentTime(initialWatchedTime);
+            }
           });
 
           vimeoPlayerRef.current.on("timeupdate", (data) => {
@@ -250,6 +274,10 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
             
             const progressPercent = dur > 0 ? (maxWatchedTimeRef.current / dur) * 100 : 0;
             setProgress(progressPercent);
+            
+            if (onProgressChangeRef.current) {
+              onProgressChangeRef.current(progressPercent, maxWatchedTimeRef.current);
+            }
             
             if (progressPercent >= 90) {
               setIsComplete(true);
@@ -289,7 +317,8 @@ export default function VideoPlayer({ videoUrl, onCanComplete }: VideoPlayerProp
         vimeoPlayerRef.current = null;
       }
     };
-  }, [videoUrl, getYouTubeVideoId, getVimeoVideoId, onCanComplete]);
+  // Note: onProgressChange intentionally excluded from deps - it's a callback that shouldn't trigger re-initialization
+  }, [videoUrl, getYouTubeVideoId, getVimeoVideoId, onCanComplete, initialWatchedTime]);
 
   if (isYouTube) {
     return (

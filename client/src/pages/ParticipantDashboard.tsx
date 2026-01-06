@@ -28,6 +28,8 @@ const messageSchema = z.object({
   content: z.string().min(1, "Mesaj içeriği gerekli"),
 });
 
+const VIDEO_PROGRESS_KEY = "lms_video_progress";
+
 interface AssignmentWithTraining {
   assignment: TrainingAssignment;
   training: Training;
@@ -42,6 +44,32 @@ export default function ParticipantDashboard() {
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
   const [activeTab, setActiveTab] = useState("trainings");
   const [canComplete, setCanComplete] = useState(false);
+
+  const getVideoProgress = (assignmentId: string): number => {
+    try {
+      const stored = localStorage.getItem(VIDEO_PROGRESS_KEY);
+      if (stored) {
+        const progressMap = JSON.parse(stored);
+        return progressMap[assignmentId]?.watchedTime || 0;
+      }
+    } catch {
+    }
+    return 0;
+  };
+
+  const saveVideoProgress = (assignmentId: string, progress: number, watchedTime: number) => {
+    try {
+      const stored = localStorage.getItem(VIDEO_PROGRESS_KEY);
+      const progressMap = stored ? JSON.parse(stored) : {};
+      progressMap[assignmentId] = { progress, watchedTime, updatedAt: Date.now() };
+      localStorage.setItem(VIDEO_PROGRESS_KEY, JSON.stringify(progressMap));
+    } catch {
+    }
+  };
+
+  const handleVideoClose = () => {
+    setSelectedTraining(null);
+  };
 
   useEffect(() => {
     if (selectedTraining) {
@@ -473,18 +501,27 @@ export default function ParticipantDashboard() {
         </Card>
       </main>
 
-      <Dialog open={!!selectedTraining} onOpenChange={(open) => !open && setSelectedTraining(null)}>
+      <Dialog open={!!selectedTraining} onOpenChange={(open) => !open && handleVideoClose()}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black">
           <DialogHeader className="p-4 pb-0">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-white">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white shrink-0"
+                onClick={handleVideoClose}
+                data-testid="button-video-back"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <DialogTitle className="text-white flex-1">
                 {selectedTraining?.training.title}
               </DialogTitle>
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-white"
-                onClick={() => setSelectedTraining(null)}
+                className="text-white shrink-0"
+                onClick={handleVideoClose}
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -494,6 +531,11 @@ export default function ParticipantDashboard() {
             <VideoPlayer
               videoUrl={selectedTraining.training.videoUrl}
               onCanComplete={setCanComplete}
+              assignmentId={selectedTraining.assignment.id}
+              initialWatchedTime={getVideoProgress(selectedTraining.assignment.id)}
+              onProgressChange={(progress, watchedTime) => 
+                saveVideoProgress(selectedTraining.assignment.id, progress, watchedTime)
+              }
             />
           )}
           {selectedTraining && !selectedTraining.assignment.completed && (
