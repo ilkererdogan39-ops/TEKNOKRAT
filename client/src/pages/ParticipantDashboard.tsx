@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft } from "lucide-react";
+import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft, Clock } from "lucide-react";
 import type { Training, TrainingAssignment, Message } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import VideoPlayer from "@/components/VideoPlayer";
