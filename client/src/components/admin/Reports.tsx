@@ -159,12 +159,12 @@ export function Reports() {
           </div>
         </CardHeader>
         <CardContent>
-          {assignments.length === 0 ? (
+          {participants.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Henüz eğitim atanmamış</h3>
+              <h3 className="text-lg font-medium mb-2">Henüz katılımcı yok</h3>
               <p className="text-muted-foreground">
-                Katılımcılara eğitim atayarak başlayın.
+                Katılımcı ekleyerek başlayın.
               </p>
             </div>
           ) : (
@@ -179,10 +179,6 @@ export function Reports() {
                 </TableHeader>
                 <TableBody>
                   {[...participants]
-                    .filter(p => {
-                      const report = getParticipantReport(p.id);
-                      return report.total > 0;
-                    })
                     .sort((a, b) => {
                       const reportA = getParticipantReport(a.id);
                       const reportB = getParticipantReport(b.id);
@@ -231,7 +227,11 @@ export function Reports() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {report.completed === report.total && report.total > 0 ? (
+                          {report.total === 0 ? (
+                            <Badge variant="outline" className="text-muted-foreground">
+                              Eğitim Atanmamış
+                            </Badge>
+                          ) : report.completed === report.total && report.total > 0 ? (
                             <Badge className="bg-green-500">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Tamamlandı
