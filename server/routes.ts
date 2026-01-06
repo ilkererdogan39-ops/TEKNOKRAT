@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertParticipantSchema, insertTrainingSchema, type Participant } from "@shared/schema";
+import { insertParticipantSchema, insertTrainingSchema, insertMessageSchema, replyMessageSchema, type Participant } from "@shared/schema";
 import { z } from "zod";
 
 // Helper to strip password from participant response
@@ -256,6 +256,66 @@ export async function registerRoutes(
       res.json(assignment);
     } catch (error) {
       res.status(500).json({ error: "Failed to complete assignment" });
+    }
+  });
+
+  // Messages
+  app.get("/api/messages", async (_req, res) => {
+    try {
+      const messages = await storage.getMessages();
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.get("/api/messages/participant/:participantId", async (req, res) => {
+    try {
+      const messages = await storage.getMessagesByParticipant(req.params.participantId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const data = insertMessageSchema.parse(req.body);
+      const message = await storage.createMessage(data);
+      res.status(201).json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.patch("/api/messages/:id/read", async (req, res) => {
+    try {
+      const message = await storage.markMessageAsRead(req.params.id);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  app.post("/api/messages/:id/reply", async (req, res) => {
+    try {
+      const { reply } = replyMessageSchema.parse(req.body);
+      const message = await storage.replyToMessage(req.params.id, reply);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to reply to message" });
     }
   });
 

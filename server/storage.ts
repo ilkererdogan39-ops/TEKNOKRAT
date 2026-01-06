@@ -4,6 +4,8 @@ import {
   type Training,
   type InsertTraining,
   type TrainingAssignment,
+  type Message,
+  type InsertMessage,
   type User,
   type InsertUser
 } from "@shared/schema";
@@ -33,6 +35,14 @@ export interface IStorage {
   deleteAssignmentsByTraining(trainingId: string): Promise<void>;
   deleteAssignmentsByParticipant(participantId: string): Promise<void>;
   
+  // Messages
+  getMessages(): Promise<Message[]>;
+  getMessage(id: string): Promise<Message | undefined>;
+  getMessagesByParticipant(participantId: string): Promise<Message[]>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  markMessageAsRead(id: string): Promise<Message | undefined>;
+  replyToMessage(id: string, reply: string): Promise<Message | undefined>;
+  
   // Reset
   resetAll(): Promise<void>;
   
@@ -46,12 +56,14 @@ export class MemStorage implements IStorage {
   private participants: Map<string, Participant>;
   private trainings: Map<string, Training>;
   private assignments: Map<string, TrainingAssignment>;
+  private messages: Map<string, Message>;
   private users: Map<string, User>;
 
   constructor() {
     this.participants = new Map();
     this.trainings = new Map();
     this.assignments = new Map();
+    this.messages = new Map();
     this.users = new Map();
   }
 
@@ -155,7 +167,8 @@ export class MemStorage implements IStorage {
   }
 
   async deleteAssignmentsByTraining(trainingId: string): Promise<void> {
-    for (const [id, assignment] of this.assignments) {
+    const entries = Array.from(this.assignments.entries());
+    for (const [id, assignment] of entries) {
       if (assignment.trainingId === trainingId) {
         this.assignments.delete(id);
       }
@@ -163,11 +176,66 @@ export class MemStorage implements IStorage {
   }
 
   async deleteAssignmentsByParticipant(participantId: string): Promise<void> {
-    for (const [id, assignment] of this.assignments) {
+    const entries = Array.from(this.assignments.entries());
+    for (const [id, assignment] of entries) {
       if (assignment.participantId === participantId) {
         this.assignments.delete(id);
       }
     }
+  }
+
+  // Messages
+  async getMessages(): Promise<Message[]> {
+    return Array.from(this.messages.values()).sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
+  async getMessage(id: string): Promise<Message | undefined> {
+    return this.messages.get(id);
+  }
+
+  async getMessagesByParticipant(participantId: string): Promise<Message[]> {
+    return Array.from(this.messages.values())
+      .filter(m => m.participantId === participantId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async createMessage(data: InsertMessage): Promise<Message> {
+    const id = randomUUID();
+    const message: Message = {
+      ...data,
+      id,
+      createdAt: new Date().toISOString(),
+      read: false,
+      reply: null,
+      repliedAt: null
+    };
+    this.messages.set(id, message);
+    return message;
+  }
+
+  async markMessageAsRead(id: string): Promise<Message | undefined> {
+    const existing = this.messages.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Message = { ...existing, read: true };
+    this.messages.set(id, updated);
+    return updated;
+  }
+
+  async replyToMessage(id: string, reply: string): Promise<Message | undefined> {
+    const existing = this.messages.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Message = {
+      ...existing,
+      read: true,
+      reply,
+      repliedAt: new Date().toISOString()
+    };
+    this.messages.set(id, updated);
+    return updated;
   }
 
   // Reset
@@ -175,6 +243,7 @@ export class MemStorage implements IStorage {
     this.participants.clear();
     this.trainings.clear();
     this.assignments.clear();
+    this.messages.clear();
   }
 
   // Legacy User support

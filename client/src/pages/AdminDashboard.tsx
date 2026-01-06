@@ -9,8 +9,9 @@ import { useAuth } from "@/lib/AuthContext";
 import { UserManagement } from "@/components/admin/UserManagement";
 import { TrainingAssignment } from "@/components/admin/TrainingAssignment";
 import { Reports } from "@/components/admin/Reports";
-import { LogOut, Users, BookOpen, BarChart3, GraduationCap, CheckCircle, Clock } from "lucide-react";
-import type { SafeParticipant, TrainingAssignment as TAssignment, Training } from "@shared/schema";
+import { Messages } from "@/components/admin/Messages";
+import { LogOut, Users, BookOpen, BarChart3, GraduationCap, CheckCircle, Clock, Mail } from "lucide-react";
+import type { SafeParticipant, TrainingAssignment as TAssignment, Training, Message } from "@shared/schema";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
@@ -177,6 +178,14 @@ export default function AdminDashboard() {
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Raporlar
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="messages"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  data-testid="tab-messages"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Mesajlar
+                </TabsTrigger>
               </TabsList>
             </CardHeader>
             <CardContent className="pt-6">
@@ -188,6 +197,9 @@ export default function AdminDashboard() {
               </TabsContent>
               <TabsContent value="reports" className="mt-0">
                 <Reports />
+              </TabsContent>
+              <TabsContent value="messages" className="mt-0">
+                <Messages />
               </TabsContent>
             </CardContent>
           </Tabs>

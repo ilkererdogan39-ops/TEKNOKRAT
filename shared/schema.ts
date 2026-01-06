@@ -83,6 +83,32 @@ export interface ParticipantReport {
   }[];
 }
 
+// Message schema for feedback system
+export interface Message {
+  id: string;
+  participantId: string;
+  subject: string;
+  content: string;
+  createdAt: string;
+  read: boolean;
+  reply: string | null;
+  repliedAt: string | null;
+}
+
+export const insertMessageSchema = z.object({
+  participantId: z.string().min(1),
+  subject: z.string().min(1, "Konu gerekli"),
+  content: z.string().min(1, "Mesaj içeriği gerekli"),
+});
+
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export const replyMessageSchema = z.object({
+  reply: z.string().min(1, "Yanıt gerekli"),
+});
+
+export type ReplyMessage = z.infer<typeof replyMessageSchema>;
+
 // Legacy User type for compatibility
 export interface User {
   id: string;
