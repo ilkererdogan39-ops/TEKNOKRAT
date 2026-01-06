@@ -163,7 +163,7 @@ export const saveVideoProgressSchema = z.object({
   participantId: z.string().min(1),
   watchedSeconds: z.number().min(0),
   progressPercent: z.number().min(0).max(100),
-  totalDuration: z.number().optional(),
+  totalDuration: z.number().optional().nullable(),
 });
 
 export type SaveVideoProgress = z.infer<typeof saveVideoProgressSchema>;

@@ -19,7 +19,7 @@ A Corporate Training Management System built in Turkish. The platform enables or
 - **Streamlined Login**: Returning users with saved credentials go directly to password entry (localStorage-based)
 - **Training Dashboard**: View assigned trainings with thumbnails and progress
 - **Video Player**: Watch embedded training videos with enforced viewing (no seeking, 90% completion required)
-- **Video Progress Persistence**: Video progress saved to localStorage - resume from where you left off
+- **Video Progress Persistence**: Video progress saved to database - resume from where you left off across sessions
 - **Completion Tracking**: Mark trainings as complete with progress tracking
 - **Messaging**: Send messages to admin and view replies
 
@@ -40,7 +40,7 @@ A Corporate Training Management System built in Turkish. The platform enables or
 ### Database
 - PostgreSQL (Neon-backed)
 - Drizzle ORM for type-safe queries
-- Tables: participants, trainings, training_assignments, messages, users
+- Tables: participants, trainings, training_assignments, messages, users, video_watch_logs
 
 ## Key Routes
 
@@ -64,12 +64,16 @@ A Corporate Training Management System built in Turkish. The platform enables or
 - `GET /api/assignments` - List all assignments
 - `GET /api/my-trainings/:participantId` - Get participant's trainings
 - `POST /api/assignments/:id/complete` - Mark training complete
+- `GET /api/video-progress/:assignmentId` - Get video progress for assignment
+- `POST /api/video-progress` - Save video progress (persisted to database)
+- `GET /api/video-progress/:assignmentId/logs` - Get video watch history
 - `DELETE /api/reset` - Reset all data
 
 ## Security
 - Passwords are stripped from all API responses
 - Admin credentials: username `admin`, password `admin123`
 - Data persists in PostgreSQL database (survives server restarts)
+- Video progress ownership validated before saving
 
 ## Project Structure
 ```

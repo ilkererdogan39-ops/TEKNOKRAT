@@ -399,6 +399,15 @@ export async function registerRoutes(
   app.post("/api/video-progress", async (req, res) => {
     try {
       const data = saveVideoProgressSchema.parse(req.body);
+      
+      const assignment = await storage.getAssignment(data.assignmentId);
+      if (!assignment) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      if (assignment.participantId !== data.participantId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      
       const progress = await storage.saveVideoProgress(data);
       await storage.updateAssignmentProgress(data.assignmentId, data.progressPercent);
       res.json(progress);
