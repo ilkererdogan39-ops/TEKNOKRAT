@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -18,7 +18,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Clock, Video, Loader2, X, MessageSquare, Send, Mail, Reply } from "lucide-react";
+import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Clock, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft } from "lucide-react";
 import type { Training, TrainingAssignment, Message } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,12 +34,31 @@ interface AssignmentWithTraining {
 
 type MessageForm = z.infer<typeof messageSchema>;
 
+const MIN_WATCH_TIME_SECONDS = 30;
+
 export default function ParticipantDashboard() {
   const [, setLocation] = useLocation();
   const { session, participant, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
   const [activeTab, setActiveTab] = useState("trainings");
+  const [watchTime, setWatchTime] = useState(0);
+  const watchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (selectedTraining && !selectedTraining.assignment.completed) {
+      setWatchTime(0);
+      watchTimerRef.current = setInterval(() => {
+        setWatchTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (watchTimerRef.current) {
+        clearInterval(watchTimerRef.current);
+        watchTimerRef.current = null;
+      }
+    };
+  }, [selectedTraining]);
 
   const form = useForm<MessageForm>({
     resolver: zodResolver(messageSchema),
@@ -151,6 +170,14 @@ export default function ParticipantDashboard() {
       <header className="sticky top-0 z-50 border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/")}
+              data-testid="button-back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="p-2 bg-primary/10 rounded-lg">
               <GraduationCap className="h-6 w-6 text-primary" />
             </div>
@@ -494,24 +521,38 @@ export default function ParticipantDashboard() {
           </div>
           {selectedTraining && !selectedTraining.assignment.completed && (
             <div className="p-4 bg-black/90 border-t border-white/10">
-              <Button
-                className="w-full"
-                onClick={() => completeMutation.mutate(selectedTraining.assignment.id)}
-                disabled={completeMutation.isPending}
-                data-testid="button-complete-training"
-              >
-                {completeMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    İşleniyor...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Eğitimi Tamamla
-                  </>
-                )}
-              </Button>
+              {watchTime < MIN_WATCH_TIME_SECONDS ? (
+                <div className="text-center">
+                  <p className="text-white/70 text-sm mb-2">
+                    Videoyu izlemeye devam edin
+                  </p>
+                  <div className="flex items-center justify-center gap-2 text-white">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-sm">
+                      {MIN_WATCH_TIME_SECONDS - watchTime} saniye kaldı
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  className="w-full"
+                  onClick={() => completeMutation.mutate(selectedTraining.assignment.id)}
+                  disabled={completeMutation.isPending}
+                  data-testid="button-complete-training"
+                >
+                  {completeMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      İşleniyor...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Eğitimi Tamamla
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>
