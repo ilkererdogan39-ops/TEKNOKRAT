@@ -1,33 +1,77 @@
+import { pgTable, text, boolean, integer, timestamp, varchar } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 
-// User roles
 export type UserRole = "admin" | "participant";
 
-// Participant (trainee) schema
-export interface Participant {
-  id: string;
-  employeeId: string;
-  fullName: string;
-  department: string;
-  email: string;
-  password: string | null;
-  hasPassword: boolean;
-}
+export const participants = pgTable("participants", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id", { length: 100 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  department: varchar("department", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  password: text("password"),
+  hasPassword: boolean("has_password").notNull().default(false),
+});
 
-// Safe participant without password (for API responses)
+export const trainings = pgTable("trainings", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 500 }).notNull(),
+  videoUrl: text("video_url").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const trainingAssignments = pgTable("training_assignments", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  trainingId: varchar("training_id", { length: 36 }).notNull(),
+  participantId: varchar("participant_id", { length: 36 }).notNull(),
+  assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+  completed: boolean("completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  progress: integer("progress").notNull().default(0),
+});
+
+export const messages = pgTable("messages", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id", { length: 36 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  read: boolean("read").notNull().default(false),
+  reply: text("reply"),
+  repliedAt: timestamp("replied_at"),
+});
+
+export const users = pgTable("users", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  username: varchar("username", { length: 100 }).notNull().unique(),
+  password: text("password").notNull(),
+});
+
+export type Participant = typeof participants.$inferSelect;
+export type InsertParticipantDB = typeof participants.$inferInsert;
+export type Training = typeof trainings.$inferSelect;
+export type InsertTrainingDB = typeof trainings.$inferInsert;
+export type TrainingAssignment = typeof trainingAssignments.$inferSelect;
+export type InsertAssignmentDB = typeof trainingAssignments.$inferInsert;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessageDB = typeof messages.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type InsertUserDB = typeof users.$inferInsert;
+
 export type SafeParticipant = Omit<Participant, "password">;
 
-export const insertParticipantSchema = z.object({
+export const insertParticipantSchema = createInsertSchema(participants).omit({ id: true }).extend({
   employeeId: z.string().min(1, "Sicil no gerekli"),
   fullName: z.string().min(1, "Ad soyad gerekli"),
   department: z.string().min(1, "Departman gerekli"),
   email: z.string().email("Geçerli e-posta gerekli"),
-  password: z.string().min(4, "Şifre en az 4 karakter olmalı").optional(),
+  password: z.string().min(4, "Şifre en az 4 karakter olmalı").optional().nullable(),
 });
 
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 
-// Schema for identifying participant
 export const identifyParticipantSchema = z.object({
   employeeId: z.string().min(1, "Sicil no gerekli"),
   email: z.string().email("Geçerli e-posta gerekli"),
@@ -35,7 +79,6 @@ export const identifyParticipantSchema = z.object({
 
 export type IdentifyParticipant = z.infer<typeof identifyParticipantSchema>;
 
-// Schema for setting password
 export const setPasswordSchema = z.object({
   participantId: z.string().min(1),
   password: z.string().min(4, "Şifre en az 4 karakter olmalı"),
@@ -43,31 +86,12 @@ export const setPasswordSchema = z.object({
 
 export type SetPassword = z.infer<typeof setPasswordSchema>;
 
-// Training schema
-export interface Training {
-  id: string;
-  title: string;
-  videoUrl: string;
-  createdAt: string;
-}
-
-export const insertTrainingSchema = z.object({
+export const insertTrainingSchema = createInsertSchema(trainings).omit({ id: true, createdAt: true }).extend({
   title: z.string().min(1, "Eğitim başlığı gerekli"),
   videoUrl: z.string().url("Geçerli video URL gerekli"),
 });
 
 export type InsertTraining = z.infer<typeof insertTrainingSchema>;
-
-// Training Assignment schema
-export interface TrainingAssignment {
-  id: string;
-  trainingId: string;
-  participantId: string;
-  assignedAt: string;
-  completed: boolean;
-  completedAt: string | null;
-  progress: number; // 0-100
-}
 
 export const insertAssignmentSchema = z.object({
   trainingId: z.string().min(1),
@@ -76,19 +100,16 @@ export const insertAssignmentSchema = z.object({
 
 export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 
-// Admin credentials (hardcoded for simplicity)
 export const ADMIN_CREDENTIALS = {
   username: "admin",
   password: "admin123",
 };
 
-// Auth session
 export interface AuthSession {
   role: UserRole;
   participantId?: string;
 }
 
-// Report data
 export interface ParticipantReport {
   participant: Participant;
   totalAssigned: number;
@@ -100,19 +121,13 @@ export interface ParticipantReport {
   }[];
 }
 
-// Message schema for feedback system
-export interface Message {
-  id: string;
-  participantId: string;
-  subject: string;
-  content: string;
-  createdAt: string;
-  read: boolean;
-  reply: string | null;
-  repliedAt: string | null;
-}
-
-export const insertMessageSchema = z.object({
+export const insertMessageSchema = createInsertSchema(messages).omit({ 
+  id: true, 
+  createdAt: true, 
+  read: true, 
+  reply: true, 
+  repliedAt: true 
+}).extend({
   participantId: z.string().min(1),
   subject: z.string().min(1, "Konu gerekli"),
   content: z.string().min(1, "Mesaj içeriği gerekli"),
@@ -126,16 +141,6 @@ export const replyMessageSchema = z.object({
 
 export type ReplyMessage = z.infer<typeof replyMessageSchema>;
 
-// Legacy User type for compatibility
-export interface User {
-  id: string;
-  username: string;
-  password: string;
-}
-
-export const insertUserSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
-});
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -16,9 +16,10 @@ A Corporate Training Management System built in Turkish. The platform enables or
 - **Email Notifications**: Send email when trainings are assigned (requires SMTP or Resend integration)
 
 ### Participant Panel
-- **Two-Step Login**: Enter employee ID + email, then set password (first time) or login (returning)
+- **Streamlined Login**: Returning users with saved credentials go directly to password entry (localStorage-based)
 - **Training Dashboard**: View assigned trainings with thumbnails and progress
-- **Video Player**: Watch embedded training videos
+- **Video Player**: Watch embedded training videos with enforced viewing (no seeking, 90% completion required)
+- **Video Progress Persistence**: Video progress saved to localStorage - resume from where you left off
 - **Completion Tracking**: Mark trainings as complete with progress tracking
 - **Messaging**: Send messages to admin and view replies
 
@@ -33,8 +34,13 @@ A Corporate Training Management System built in Turkish. The platform enables or
 
 ### Backend
 - Express.js API server
-- In-memory storage (MemStorage class)
+- PostgreSQL database with Drizzle ORM
 - Zod for request validation
+
+### Database
+- PostgreSQL (Neon-backed)
+- Drizzle ORM for type-safe queries
+- Tables: participants, trainings, training_assignments, messages, users
 
 ## Key Routes
 
@@ -63,6 +69,7 @@ A Corporate Training Management System built in Turkish. The platform enables or
 ## Security
 - Passwords are stripped from all API responses
 - Admin credentials: username `admin`, password `admin123`
+- Data persists in PostgreSQL database (survives server restarts)
 
 ## Project Structure
 ```
@@ -71,6 +78,7 @@ client/
 │   ├── components/
 │   │   ├── admin/          # Admin dashboard components
 │   │   ├── ui/             # shadcn/ui components
+│   │   ├── VideoPlayer.tsx # Video player with progress tracking
 │   │   └── ThemeToggle.tsx
 │   ├── lib/
 │   │   ├── AuthContext.tsx # Authentication state
@@ -79,14 +87,16 @@ client/
 │   ├── pages/              # Page components
 │   └── App.tsx
 server/
+├── db.ts                   # Database connection (Drizzle + PostgreSQL)
 ├── routes.ts               # API endpoints
-├── storage.ts              # In-memory storage
+├── storage.ts              # Database storage class
 └── index.ts
 shared/
-└── schema.ts               # Type definitions & validation
+└── schema.ts               # Drizzle ORM table definitions & Zod validation
 ```
 
 ## Development
 - Run `npm run dev` to start the development server
+- Run `npm run db:push` to sync database schema
 - Frontend serves on port 5000
 - Hot module replacement enabled

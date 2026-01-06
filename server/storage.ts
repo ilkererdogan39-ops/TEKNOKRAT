@@ -7,12 +7,17 @@ import {
   type Message,
   type InsertMessage,
   type User,
-  type InsertUser
+  type InsertUser,
+  participants,
+  trainings,
+  trainingAssignments,
+  messages,
+  users
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // Participants
   getParticipants(): Promise<Participant[]>;
   getParticipant(id: string): Promise<Participant | undefined>;
   getParticipantByEmail(email: string): Promise<Participant | undefined>;
@@ -22,13 +27,11 @@ export interface IStorage {
   setParticipantPassword(id: string, password: string): Promise<Participant | undefined>;
   deleteParticipant(id: string): Promise<boolean>;
   
-  // Trainings
   getTrainings(): Promise<Training[]>;
   getTraining(id: string): Promise<Training | undefined>;
   createTraining(training: InsertTraining): Promise<Training>;
   deleteTraining(id: string): Promise<boolean>;
   
-  // Assignments
   getAssignments(): Promise<TrainingAssignment[]>;
   getAssignment(id: string): Promise<TrainingAssignment | undefined>;
   getAssignmentsByParticipant(participantId: string): Promise<TrainingAssignment[]>;
@@ -37,7 +40,6 @@ export interface IStorage {
   deleteAssignmentsByTraining(trainingId: string): Promise<void>;
   deleteAssignmentsByParticipant(participantId: string): Promise<void>;
   
-  // Messages
   getMessages(): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   getMessagesByParticipant(participantId: string): Promise<Message[]>;
@@ -45,253 +47,208 @@ export interface IStorage {
   markMessageAsRead(id: string): Promise<Message | undefined>;
   replyToMessage(id: string, reply: string): Promise<Message | undefined>;
   
-  // Reset
   resetAll(): Promise<void>;
   
-  // Legacy User support
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  private participants: Map<string, Participant>;
-  private trainings: Map<string, Training>;
-  private assignments: Map<string, TrainingAssignment>;
-  private messages: Map<string, Message>;
-  private users: Map<string, User>;
-
-  constructor() {
-    this.participants = new Map();
-    this.trainings = new Map();
-    this.assignments = new Map();
-    this.messages = new Map();
-    this.users = new Map();
-  }
-
-  // Participants
+export class DatabaseStorage implements IStorage {
   async getParticipants(): Promise<Participant[]> {
-    return Array.from(this.participants.values());
+    return await db.select().from(participants);
   }
 
   async getParticipant(id: string): Promise<Participant | undefined> {
-    return this.participants.get(id);
+    const result = await db.select().from(participants).where(eq(participants.id, id));
+    return result[0];
   }
 
   async getParticipantByEmail(email: string): Promise<Participant | undefined> {
-    const lowerEmail = email.toLowerCase();
-    return Array.from(this.participants.values()).find(p => p.email.toLowerCase() === lowerEmail);
+    const result = await db.select().from(participants).where(
+      sql`lower(${participants.email}) = lower(${email})`
+    );
+    return result[0];
   }
 
   async getParticipantByEmployeeIdAndEmail(employeeId: string, email: string): Promise<Participant | undefined> {
-    const lowerEmail = email.toLowerCase();
-    return Array.from(this.participants.values()).find(
-      p => p.employeeId === employeeId && p.email.toLowerCase() === lowerEmail
+    const result = await db.select().from(participants).where(
+      and(
+        eq(participants.employeeId, employeeId),
+        sql`lower(${participants.email}) = lower(${email})`
+      )
     );
+    return result[0];
   }
 
   async createParticipant(data: InsertParticipant): Promise<Participant> {
-    const id = randomUUID();
-    const participant: Participant = { 
-      ...data, 
-      id,
+    const result = await db.insert(participants).values({
+      employeeId: data.employeeId,
+      fullName: data.fullName,
+      department: data.department,
+      email: data.email,
       password: data.password || null,
-      hasPassword: !!data.password
-    };
-    this.participants.set(id, participant);
-    return participant;
+      hasPassword: !!data.password,
+    }).returning();
+    return result[0];
   }
 
   async updateParticipant(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined> {
-    const existing = this.participants.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Participant = { ...existing, ...data };
-    if (data.password) {
-      updated.hasPassword = true;
+    const updateData: Partial<typeof participants.$inferInsert> = {};
+    if (data.employeeId !== undefined) updateData.employeeId = data.employeeId;
+    if (data.fullName !== undefined) updateData.fullName = data.fullName;
+    if (data.department !== undefined) updateData.department = data.department;
+    if (data.email !== undefined) updateData.email = data.email;
+    if (data.password !== undefined) {
+      updateData.password = data.password;
+      updateData.hasPassword = true;
     }
-    this.participants.set(id, updated);
-    return updated;
+
+    const result = await db.update(participants)
+      .set(updateData)
+      .where(eq(participants.id, id))
+      .returning();
+    return result[0];
   }
 
   async setParticipantPassword(id: string, password: string): Promise<Participant | undefined> {
-    const existing = this.participants.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Participant = { 
-      ...existing, 
-      password,
-      hasPassword: true
-    };
-    this.participants.set(id, updated);
-    return updated;
+    const result = await db.update(participants)
+      .set({ password, hasPassword: true })
+      .where(eq(participants.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteParticipant(id: string): Promise<boolean> {
-    return this.participants.delete(id);
+    const result = await db.delete(participants).where(eq(participants.id, id)).returning();
+    return result.length > 0;
   }
 
-  // Trainings
   async getTrainings(): Promise<Training[]> {
-    return Array.from(this.trainings.values());
+    return await db.select().from(trainings).orderBy(desc(trainings.createdAt));
   }
 
   async getTraining(id: string): Promise<Training | undefined> {
-    return this.trainings.get(id);
+    const result = await db.select().from(trainings).where(eq(trainings.id, id));
+    return result[0];
   }
 
   async createTraining(data: InsertTraining): Promise<Training> {
-    const id = randomUUID();
-    const training: Training = { 
-      ...data, 
-      id,
-      createdAt: new Date().toISOString()
-    };
-    this.trainings.set(id, training);
-    return training;
+    const result = await db.insert(trainings).values({
+      title: data.title,
+      videoUrl: data.videoUrl,
+    }).returning();
+    return result[0];
   }
 
   async deleteTraining(id: string): Promise<boolean> {
-    return this.trainings.delete(id);
+    const result = await db.delete(trainings).where(eq(trainings.id, id)).returning();
+    return result.length > 0;
   }
 
-  // Assignments
   async getAssignments(): Promise<TrainingAssignment[]> {
-    return Array.from(this.assignments.values());
+    return await db.select().from(trainingAssignments);
   }
 
   async getAssignment(id: string): Promise<TrainingAssignment | undefined> {
-    return this.assignments.get(id);
+    const result = await db.select().from(trainingAssignments).where(eq(trainingAssignments.id, id));
+    return result[0];
   }
 
   async getAssignmentsByParticipant(participantId: string): Promise<TrainingAssignment[]> {
-    return Array.from(this.assignments.values()).filter(a => a.participantId === participantId);
+    return await db.select().from(trainingAssignments).where(eq(trainingAssignments.participantId, participantId));
   }
 
   async createAssignment(trainingId: string, participantId: string): Promise<TrainingAssignment> {
-    const id = randomUUID();
-    const assignment: TrainingAssignment = {
-      id,
+    const result = await db.insert(trainingAssignments).values({
       trainingId,
       participantId,
-      assignedAt: new Date().toISOString(),
-      completed: false,
-      completedAt: null,
-      progress: 0
-    };
-    this.assignments.set(id, assignment);
-    return assignment;
+    }).returning();
+    return result[0];
   }
 
   async completeAssignment(id: string): Promise<TrainingAssignment | undefined> {
-    const existing = this.assignments.get(id);
-    if (!existing) return undefined;
-    
-    const updated: TrainingAssignment = {
-      ...existing,
-      completed: true,
-      completedAt: new Date().toISOString(),
-      progress: 100
-    };
-    this.assignments.set(id, updated);
-    return updated;
+    const result = await db.update(trainingAssignments)
+      .set({ 
+        completed: true, 
+        completedAt: new Date(), 
+        progress: 100 
+      })
+      .where(eq(trainingAssignments.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteAssignmentsByTraining(trainingId: string): Promise<void> {
-    const entries = Array.from(this.assignments.entries());
-    for (const [id, assignment] of entries) {
-      if (assignment.trainingId === trainingId) {
-        this.assignments.delete(id);
-      }
-    }
+    await db.delete(trainingAssignments).where(eq(trainingAssignments.trainingId, trainingId));
   }
 
   async deleteAssignmentsByParticipant(participantId: string): Promise<void> {
-    const entries = Array.from(this.assignments.entries());
-    for (const [id, assignment] of entries) {
-      if (assignment.participantId === participantId) {
-        this.assignments.delete(id);
-      }
-    }
+    await db.delete(trainingAssignments).where(eq(trainingAssignments.participantId, participantId));
   }
 
-  // Messages
   async getMessages(): Promise<Message[]> {
-    return Array.from(this.messages.values()).sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return await db.select().from(messages).orderBy(desc(messages.createdAt));
   }
 
   async getMessage(id: string): Promise<Message | undefined> {
-    return this.messages.get(id);
+    const result = await db.select().from(messages).where(eq(messages.id, id));
+    return result[0];
   }
 
   async getMessagesByParticipant(participantId: string): Promise<Message[]> {
-    return Array.from(this.messages.values())
-      .filter(m => m.participantId === participantId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return await db.select().from(messages)
+      .where(eq(messages.participantId, participantId))
+      .orderBy(desc(messages.createdAt));
   }
 
   async createMessage(data: InsertMessage): Promise<Message> {
-    const id = randomUUID();
-    const message: Message = {
-      ...data,
-      id,
-      createdAt: new Date().toISOString(),
-      read: false,
-      reply: null,
-      repliedAt: null
-    };
-    this.messages.set(id, message);
-    return message;
+    const result = await db.insert(messages).values({
+      participantId: data.participantId,
+      subject: data.subject,
+      content: data.content,
+    }).returning();
+    return result[0];
   }
 
   async markMessageAsRead(id: string): Promise<Message | undefined> {
-    const existing = this.messages.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Message = { ...existing, read: true };
-    this.messages.set(id, updated);
-    return updated;
+    const result = await db.update(messages)
+      .set({ read: true })
+      .where(eq(messages.id, id))
+      .returning();
+    return result[0];
   }
 
   async replyToMessage(id: string, reply: string): Promise<Message | undefined> {
-    const existing = this.messages.get(id);
-    if (!existing) return undefined;
-    
-    const updated: Message = {
-      ...existing,
-      read: true,
-      reply,
-      repliedAt: new Date().toISOString()
-    };
-    this.messages.set(id, updated);
-    return updated;
+    const result = await db.update(messages)
+      .set({ read: true, reply, repliedAt: new Date() })
+      .where(eq(messages.id, id))
+      .returning();
+    return result[0];
   }
 
-  // Reset
   async resetAll(): Promise<void> {
-    this.participants.clear();
-    this.trainings.clear();
-    this.assignments.clear();
-    this.messages.clear();
+    await db.delete(trainingAssignments);
+    await db.delete(messages);
+    await db.delete(trainings);
+    await db.delete(participants);
+    await db.delete(users);
   }
 
-  // Legacy User support
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.username === username);
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
   }
 
   async createUser(data: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...data, id };
-    this.users.set(id, user);
-    return user;
+    const result = await db.insert(users).values(data).returning();
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
