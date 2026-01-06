@@ -22,7 +22,13 @@ export default function Landing() {
           <h1 className="text-4xl md:text-5xl font-semibold text-white mb-4">
             Kurumsal Eğitim ve Gelişim Sistemi
           </h1>
-          <p className="text-lg text-blue-100 dark:text-slate-300 max-w-2xl mx-auto">
+          <p className="text-2xl font-bold text-white tracking-widest mb-2">
+            TEKNOKRAT
+          </p>
+          <p className="text-sm text-blue-200 dark:text-slate-400 italic">
+            Geleceği Şekillendiren Eğitim Platformu
+          </p>
+          <p className="text-lg text-blue-100 dark:text-slate-300 max-w-2xl mx-auto mt-4">
             Lütfen devam etmek için bir panel seçiniz.
           </p>
         </div>

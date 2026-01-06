@@ -115,7 +115,7 @@ export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
 
 export const ADMIN_CREDENTIALS = {
   username: "admin",
-  password: "admin123",
+  password: "egitim12345",
 };
 
 export interface AuthSession {
