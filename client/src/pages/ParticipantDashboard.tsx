@@ -205,7 +205,7 @@ export default function ParticipantDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
+              onClick={() => setLocation("/")}
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />

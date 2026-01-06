@@ -27,13 +27,17 @@ export function Reports() {
     const participantAssignments = assignments.filter(a => a.participantId === participantId);
     const completed = participantAssignments.filter(a => a.completed).length;
     const total = participantAssignments.length;
-    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const avgProgress = total > 0 
+      ? Math.round(participantAssignments.reduce((sum, a) => sum + (a.progress || 0), 0) / total)
+      : 0;
     
     return {
       total,
       completed,
       pending: total - completed,
-      rate,
+      rate: completionRate,
+      avgProgress,
       trainings: participantAssignments.map(a => ({
         assignment: a,
         training: trainings.find(t => t.id === a.trainingId),
@@ -146,7 +150,8 @@ export function Reports() {
                     <TableHead className="font-semibold hidden md:table-cell">Departman</TableHead>
                     <TableHead className="font-semibold text-center">Atanan</TableHead>
                     <TableHead className="font-semibold text-center">Tamamlanan</TableHead>
-                    <TableHead className="font-semibold">İlerleme</TableHead>
+                    <TableHead className="font-semibold">Video İlerlemesi</TableHead>
+                    <TableHead className="font-semibold">Tamamlanma</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -178,7 +183,15 @@ export function Reports() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-3 min-w-[150px]">
+                          <div className="flex items-center gap-3 min-w-[120px]">
+                            <Progress value={report.avgProgress} className="h-2 flex-1" />
+                            <span className="text-sm font-medium w-12 text-right">
+                              %{report.avgProgress}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3 min-w-[120px]">
                             <Progress value={report.rate} className="h-2 flex-1" />
                             <span className="text-sm font-medium w-12 text-right">
                               %{report.rate}
@@ -220,7 +233,10 @@ export function Reports() {
                 const trainingAssignments = assignments.filter(a => a.trainingId === training.id);
                 const completed = trainingAssignments.filter(a => a.completed).length;
                 const total = trainingAssignments.length;
-                const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+                const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+                const avgProgress = total > 0 
+                  ? Math.round(trainingAssignments.reduce((sum, a) => sum + (a.progress || 0), 0) / total)
+                  : 0;
 
                 return (
                   <div 
@@ -235,17 +251,27 @@ export function Reports() {
                           <Users className="h-3 w-3 mr-1" />
                           {total}
                         </Badge>
-                        <Badge variant={rate === 100 && total > 0 ? "default" : "secondary"}>
+                        <Badge variant={completionRate === 100 && total > 0 ? "default" : "secondary"}>
                           <CheckCircle className="h-3 w-3 mr-1" />
                           {completed}
                         </Badge>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Progress value={rate} className="h-2 flex-1" />
-                      <span className="text-sm font-medium w-12 text-right">
-                        %{rate}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-24">Video İzleme:</span>
+                        <Progress value={avgProgress} className="h-2 flex-1" />
+                        <span className="text-sm font-medium w-12 text-right">
+                          %{avgProgress}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-muted-foreground w-24">Tamamlanma:</span>
+                        <Progress value={completionRate} className="h-2 flex-1" />
+                        <span className="text-sm font-medium w-12 text-right">
+                          %{completionRate}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
