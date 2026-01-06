@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -19,7 +19,7 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft, Clock } from "lucide-react";
-import type { Training, TrainingAssignment, Message } from "@shared/schema";
+import type { Training, TrainingAssignment, Message, VideoWatchLog } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import VideoPlayer from "@/components/VideoPlayer";
 
@@ -27,8 +27,6 @@ const messageSchema = z.object({
   subject: z.string().min(1, "Konu gerekli"),
   content: z.string().min(1, "Mesaj içeriği gerekli"),
 });
-
-const VIDEO_PROGRESS_KEY = "lms_video_progress";
 
 interface AssignmentWithTraining {
   assignment: TrainingAssignment;
@@ -44,38 +42,61 @@ export default function ParticipantDashboard() {
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
   const [activeTab, setActiveTab] = useState("trainings");
   const [canComplete, setCanComplete] = useState(false);
+  const [initialWatchedTime, setInitialWatchedTime] = useState<number>(0);
+  const lastSaveTimeRef = useRef<number>(0);
 
-  const getVideoProgress = (assignmentId: string): number => {
-    try {
-      const stored = localStorage.getItem(VIDEO_PROGRESS_KEY);
-      if (stored) {
-        const progressMap = JSON.parse(stored);
-        return progressMap[assignmentId]?.watchedTime || 0;
-      }
-    } catch {
-    }
-    return 0;
-  };
+  const { data: videoProgress, refetch: refetchProgress } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
+    queryKey: ["/api/video-progress", selectedTraining?.assignment.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/video-progress/${selectedTraining?.assignment.id}`);
+      if (!res.ok) throw new Error("Failed to fetch progress");
+      return res.json();
+    },
+    enabled: !!selectedTraining?.assignment.id,
+  });
 
-  const saveVideoProgress = (assignmentId: string, progress: number, watchedTime: number) => {
-    try {
-      const stored = localStorage.getItem(VIDEO_PROGRESS_KEY);
-      const progressMap = stored ? JSON.parse(stored) : {};
-      progressMap[assignmentId] = { progress, watchedTime, updatedAt: Date.now() };
-      localStorage.setItem(VIDEO_PROGRESS_KEY, JSON.stringify(progressMap));
-    } catch {
+  useEffect(() => {
+    if (videoProgress) {
+      setInitialWatchedTime(videoProgress.watchedSeconds);
     }
-  };
+  }, [videoProgress]);
+
+  const saveProgressMutation = useMutation({
+    mutationFn: async (data: { assignmentId: string; participantId: string; watchedSeconds: number; progressPercent: number }) => {
+      const res = await apiRequest("POST", "/api/video-progress", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-trainings"] });
+    },
+  });
+
+  const saveVideoProgress = useCallback((assignmentId: string, progress: number, watchedTime: number) => {
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 3000) return;
+    lastSaveTimeRef.current = now;
+    
+    if (session?.participantId) {
+      saveProgressMutation.mutate({
+        assignmentId,
+        participantId: session.participantId,
+        watchedSeconds: Math.round(watchedTime),
+        progressPercent: Math.round(progress),
+      });
+    }
+  }, [session?.participantId, saveProgressMutation]);
 
   const handleVideoClose = () => {
     setSelectedTraining(null);
+    setInitialWatchedTime(0);
   };
 
   useEffect(() => {
     if (selectedTraining) {
       setCanComplete(false);
+      refetchProgress();
     }
-  }, [selectedTraining]);
+  }, [selectedTraining, refetchProgress]);
 
   const form = useForm<MessageForm>({
     resolver: zodResolver(messageSchema),
@@ -532,7 +553,7 @@ export default function ParticipantDashboard() {
               videoUrl={selectedTraining.training.videoUrl}
               onCanComplete={setCanComplete}
               assignmentId={selectedTraining.assignment.id}
-              initialWatchedTime={getVideoProgress(selectedTraining.assignment.id)}
+              initialWatchedTime={initialWatchedTime}
               onProgressChange={(progress, watchedTime) => 
                 saveVideoProgress(selectedTraining.assignment.id, progress, watchedTime)
               }
