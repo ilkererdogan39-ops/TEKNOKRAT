@@ -607,13 +607,12 @@ export default function ParticipantDashboard() {
           {selectedTraining && isProgressFetched ? (
             <div className="relative">
               <Button
-                variant="secondary"
-                size="sm"
-                className="absolute top-4 left-4 z-10 bg-black/70 text-white border-white/20 hover:bg-black/90"
+                variant="default"
+                className="absolute top-4 left-4 z-10 bg-white text-black font-semibold shadow-lg border-2 border-white/50"
                 onClick={handleVideoClose}
                 data-testid="button-video-back-overlay"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-5 w-5 mr-2" />
                 Geri Dön
               </Button>
               <VideoPlayer
