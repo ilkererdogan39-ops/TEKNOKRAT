@@ -49,6 +49,7 @@ export interface IStorage {
   createMessage(message: InsertMessage): Promise<Message>;
   markMessageAsRead(id: string): Promise<Message | undefined>;
   replyToMessage(id: string, reply: string): Promise<Message | undefined>;
+  deleteMessage(id: string): Promise<boolean>;
   
   resetAll(): Promise<void>;
   
@@ -233,6 +234,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(messages.id, id))
       .returning();
     return result[0];
+  }
+
+  async deleteMessage(id: string): Promise<boolean> {
+    const result = await db.delete(messages).where(eq(messages.id, id)).returning();
+    return result.length > 0;
   }
 
   async resetAll(): Promise<void> {

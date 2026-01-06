@@ -14,7 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, MessageSquare, Send, Clock, CheckCircle, Reply, Loader2, Inbox } from "lucide-react";
+import { Mail, MessageSquare, Send, Clock, CheckCircle, Reply, Loader2, Inbox, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { Message, SafeParticipant } from "@shared/schema";
 
 const replySchema = z.object({
@@ -57,6 +58,20 @@ export function Messages() {
     },
     onError: () => {
       toast({ title: "Hata", description: "Yanıt gönderilemedi.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/messages/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+      toast({ title: "Mesaj Silindi", description: "Mesaj başarıyla silindi." });
+      setSelectedMessage(null);
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Mesaj silinemedi.", variant: "destructive" });
     },
   });
 
@@ -178,20 +193,57 @@ export function Messages() {
       <Dialog open={!!selectedMessage} onOpenChange={(open) => !open && setSelectedMessage(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              {selectedMessage?.subject}
-            </DialogTitle>
-            <DialogDescription>
-              {getParticipant(selectedMessage?.participantId || "")?.fullName || "Bilinmeyen"} -{" "}
-              {selectedMessage && new Date(selectedMessage.createdAt).toLocaleDateString("tr-TR", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-              })}
-            </DialogDescription>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  {selectedMessage?.subject}
+                </DialogTitle>
+                <DialogDescription>
+                  {getParticipant(selectedMessage?.participantId || "")?.fullName || "Bilinmeyen"} -{" "}
+                  {selectedMessage && new Date(selectedMessage.createdAt).toLocaleDateString("tr-TR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
+                </DialogDescription>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="text-destructive"
+                    data-testid="button-delete-message"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Mesajı Sil</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Bu mesajı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>İptal</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => selectedMessage && deleteMutation.mutate(selectedMessage.id)}
+                      className="bg-destructive text-destructive-foreground"
+                    >
+                      {deleteMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Sil"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </DialogHeader>
           
           <div className="space-y-4">
