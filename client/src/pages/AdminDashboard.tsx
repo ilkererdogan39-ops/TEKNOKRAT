@@ -14,7 +14,7 @@ import type { SafeParticipant, TrainingAssignment as TAssignment, Training } fro
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const { session, logout } = useAuth();
+  const { session, logout, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState("users");
 
   const { data: participants = [] } = useQuery<SafeParticipant[]>({
@@ -28,6 +28,17 @@ export default function AdminDashboard() {
   const { data: assignments = [] } = useQuery<TAssignment[]>({
     queryKey: ["/api/assignments"],
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <GraduationCap className="h-12 w-12 mx-auto text-primary animate-pulse mb-4" />
+          <p className="text-muted-foreground">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!session || session.role !== "admin") {
     setLocation("/admin/login");

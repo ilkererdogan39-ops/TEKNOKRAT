@@ -21,7 +21,7 @@ interface AssignmentWithTraining {
 
 export default function ParticipantDashboard() {
   const [, setLocation] = useLocation();
-  const { session, participant, logout } = useAuth();
+  const { session, participant, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
 
@@ -49,6 +49,17 @@ export default function ParticipantDashboard() {
       toast({ title: "Hata", description: "İşlem sırasında bir hata oluştu.", variant: "destructive" });
     },
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <GraduationCap className="h-12 w-12 mx-auto text-primary animate-pulse mb-4" />
+          <p className="text-muted-foreground">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!session || session.role !== "participant") {
     setLocation("/participant/login");
