@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { BarChart3, Users, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import type { SafeParticipant, Training, TrainingAssignment } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export function Reports() {
   const { data: participants = [], isLoading: loadingParticipants } = useQuery<SafeParticipant[]>({
@@ -215,7 +216,7 @@ export function Reports() {
             Eğitim Bazlı İstatistikler
           </CardTitle>
           <CardDescription>
-            Her eğitimin tamamlanma durumu
+            Her eğitimin departman bazında tamamlanma durumu
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -228,15 +229,38 @@ export function Reports() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-8">
               {trainings.map((training) => {
                 const trainingAssignments = assignments.filter(a => a.trainingId === training.id);
-                const completed = trainingAssignments.filter(a => a.completed).length;
-                const total = trainingAssignments.length;
-                const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-                const avgProgress = total > 0 
-                  ? Math.round(trainingAssignments.reduce((sum, a) => sum + (a.progress || 0), 0) / total)
-                  : 0;
+                const departments = Array.from(new Set(
+                  trainingAssignments
+                    .map(a => participants.find(p => p.id === a.participantId)?.department)
+                    .filter((d): d is string => Boolean(d))
+                ));
+
+                const chartData = departments.map(dept => {
+                  const deptAssignments = trainingAssignments.filter(a => {
+                    const participant = participants.find(p => p.id === a.participantId);
+                    return participant?.department === dept;
+                  });
+                  const total = deptAssignments.length;
+                  const completed = deptAssignments.filter(a => a.completed).length;
+                  const avgProgress = total > 0
+                    ? Math.round(deptAssignments.reduce((sum, a) => sum + (a.progress || 0), 0) / total)
+                    : 0;
+                  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                  return {
+                    department: dept,
+                    "Video İzleme": avgProgress,
+                    "Tamamlanma": completionRate,
+                    total,
+                    completed,
+                  };
+                });
+
+                const totalAssigned = trainingAssignments.length;
+                const totalCompleted = trainingAssignments.filter(a => a.completed).length;
 
                 return (
                   <div 
@@ -244,35 +268,63 @@ export function Reports() {
                     className="p-4 border rounded-lg"
                     data-testid={`training-stat-${training.id}`}
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium">{training.title}</h4>
+                    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                      <h4 className="font-medium text-lg">{training.title}</h4>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline">
                           <Users className="h-3 w-3 mr-1" />
-                          {total}
+                          {totalAssigned} Katılımcı
                         </Badge>
-                        <Badge variant={completionRate === 100 && total > 0 ? "default" : "secondary"}>
+                        <Badge variant={totalCompleted === totalAssigned && totalAssigned > 0 ? "default" : "secondary"}>
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          {completed}
+                          {totalCompleted} Tamamlandı
                         </Badge>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground w-24">Video İzleme:</span>
-                        <Progress value={avgProgress} className="h-2 flex-1" />
-                        <span className="text-sm font-medium w-12 text-right">
-                          %{avgProgress}
-                        </span>
+                    {chartData.length > 0 ? (
+                      <div className="h-64">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                            <XAxis 
+                              dataKey="department" 
+                              tick={{ fontSize: 12 }}
+                              className="fill-foreground"
+                            />
+                            <YAxis 
+                              domain={[0, 100]} 
+                              tick={{ fontSize: 12 }}
+                              tickFormatter={(value) => `%${value}`}
+                              className="fill-foreground"
+                            />
+                            <Tooltip 
+                              formatter={(value: number, name: string) => [`%${value}`, name]}
+                              contentStyle={{ 
+                                backgroundColor: 'hsl(var(--card))', 
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '6px'
+                              }}
+                              labelStyle={{ color: 'hsl(var(--foreground))' }}
+                            />
+                            <Legend />
+                            <Bar 
+                              dataKey="Video İzleme" 
+                              fill="hsl(var(--primary))" 
+                              radius={[4, 4, 0, 0]}
+                            />
+                            <Bar 
+                              dataKey="Tamamlanma" 
+                              fill="hsl(var(--chart-2))" 
+                              radius={[4, 4, 0, 0]}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-muted-foreground w-24">Tamamlanma:</span>
-                        <Progress value={completionRate} className="h-2 flex-1" />
-                        <span className="text-sm font-medium w-12 text-right">
-                          %{completionRate}
-                        </span>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        Bu eğitime henüz katılımcı atanmamış.
+                      </p>
+                    )}
                   </div>
                 );
               })}
