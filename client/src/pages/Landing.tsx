@@ -19,11 +19,13 @@ export default function Landing() {
               <GraduationCap className="h-16 w-16 text-white" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-semibold text-white mb-4">
-            Kurumsal Eğitim ve Gelişim Sistemi
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-3 tracking-tight">
+            <span className="bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent drop-shadow-lg" style={{ fontFamily: "'Arial Black', 'Helvetica Neue', sans-serif", letterSpacing: "-0.03em" }}>
+              TEKNOKRAT
+            </span>
           </h1>
-          <p className="text-2xl font-bold text-white tracking-widest mb-2">
-            TEKNOKRAT
+          <p className="text-xl md:text-2xl font-medium text-blue-100 tracking-wide mb-2">
+            Kurumsal Eğitim ve Gelişim Sistemi
           </p>
           <p className="text-sm text-blue-200 dark:text-slate-400 italic">
             Geleceği Şekillendiren Eğitim Platformu
