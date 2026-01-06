@@ -79,12 +79,14 @@ export class MemStorage implements IStorage {
   }
 
   async getParticipantByEmail(email: string): Promise<Participant | undefined> {
-    return Array.from(this.participants.values()).find(p => p.email === email);
+    const lowerEmail = email.toLowerCase();
+    return Array.from(this.participants.values()).find(p => p.email.toLowerCase() === lowerEmail);
   }
 
   async getParticipantByEmployeeIdAndEmail(employeeId: string, email: string): Promise<Participant | undefined> {
+    const lowerEmail = email.toLowerCase();
     return Array.from(this.participants.values()).find(
-      p => p.employeeId === employeeId && p.email === email
+      p => p.employeeId === employeeId && p.email.toLowerCase() === lowerEmail
     );
   }
 
