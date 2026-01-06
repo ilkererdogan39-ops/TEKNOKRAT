@@ -87,7 +87,33 @@ export function UserManagement() {
 
   const importMutation = useMutation({
     mutationFn: async (file: File) => {
-      const text = await file.text();
+      // Try to read with UTF-8 first, then fall back to Windows-1254 for Turkish Excel
+      const readFileWithEncoding = (encoding: string): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsText(file, encoding);
+        });
+      };
+      
+      // Read as UTF-8 first
+      let text = await readFileWithEncoding("UTF-8");
+      
+      // Check for common Turkish characters being garbled (indicates wrong encoding)
+      // If we see replacement characters or garbled text, try Windows-1254
+      const hasGarbledChars = /[\ufffd]|Ã¼|Ã¶|Ã§|ÅŸ|Ä±|ÄŸ|Ã–|Ãœ|Ã‡|Å |Ä°|Äž/.test(text);
+      
+      if (hasGarbledChars) {
+        // Try Windows-1254 (Turkish ANSI) encoding
+        text = await readFileWithEncoding("windows-1254");
+      }
+      
+      // Remove BOM if present
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1);
+      }
+      
       const res = await apiRequest("POST", "/api/participants/import", { csv: text });
       return res.json();
     },
