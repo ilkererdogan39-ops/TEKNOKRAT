@@ -128,14 +128,27 @@ export async function registerRoutes(
         return res.status(400).json({ error: "CSV data required" });
       }
 
-      const lines = csv.split("\n").filter(line => line.trim());
+      const lines = csv.split(/\r?\n/).filter(line => line.trim());
       let imported = 0;
       
+      // Detect delimiter (comma or semicolon - Turkish Excel uses semicolon)
+      const firstLine = lines[0] || "";
+      const delimiter = firstLine.includes(";") ? ";" : ",";
+      
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(",").map(v => v.trim().replace(/^"|"$/g, ""));
+        const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ""));
         
-        if (values.length >= 5) {
-          const [employeeId, fullName, department, email, password] = values;
+        if (values.length >= 4) {
+          // Support both 4 columns (auto-generate password) and 5 columns
+          const employeeId = values[0] || "";
+          const fullName = values[1] || "";
+          const department = values[2] || "";
+          const email = values[3] || "";
+          const password = values[4] || "1234"; // Default password if not provided
+          
+          if (!employeeId || !fullName || !department || !email) {
+            continue; // Skip invalid rows
+          }
           
           try {
             const data = insertParticipantSchema.parse({
