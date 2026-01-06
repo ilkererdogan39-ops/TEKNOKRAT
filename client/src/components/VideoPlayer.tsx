@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { AlertTriangle, CheckCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle, Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 declare global {
   interface Window {
@@ -80,6 +81,9 @@ export default function VideoPlayer({
   const [isYouTube, setIsYouTube] = useState(false);
   const [isVimeo, setIsVimeo] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const getYouTubeVideoId = useCallback((url: string): string | null => {
     const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s]+)/);
@@ -103,6 +107,8 @@ export default function VideoPlayer({
     durationRef.current = 0;
     setProgress(0);
     setIsComplete(false);
+    setIsLoading(true);
+    setHasError(false);
     onCanComplete(false);
 
     if (youtubeId) {
@@ -126,7 +132,16 @@ export default function VideoPlayer({
           }
         }, 100);
 
-        setTimeout(() => clearInterval(checkAPI), 10000);
+        const timeout = setTimeout(() => {
+          clearInterval(checkAPI);
+          setIsLoading(false);
+          setHasError(true);
+        }, 15000);
+
+        return () => {
+          clearInterval(checkAPI);
+          clearTimeout(timeout);
+        };
       };
 
       const initializePlayer = (videoId: string) => {
@@ -150,6 +165,8 @@ export default function VideoPlayer({
           },
           events: {
             onReady: (event) => {
+              setIsLoading(false);
+              setHasError(false);
               durationRef.current = event.target.getDuration();
               if (initialWatchedTime > 0) {
                 event.target.seekTo(initialWatchedTime, true);
@@ -253,6 +270,8 @@ export default function VideoPlayer({
           vimeoPlayerRef.current = new window.Vimeo.Player(iframeRef.current);
           
           vimeoPlayerRef.current.getDuration().then(dur => {
+            setIsLoading(false);
+            setHasError(false);
             durationRef.current = dur;
             if (initialWatchedTime > 0) {
               vimeoPlayerRef.current?.setCurrentTime(initialWatchedTime);
@@ -318,12 +337,38 @@ export default function VideoPlayer({
       }
     };
   // Note: onProgressChange intentionally excluded from deps - it's a callback that shouldn't trigger re-initialization
-  }, [videoUrl, getYouTubeVideoId, getVimeoVideoId, onCanComplete, initialWatchedTime]);
+  }, [videoUrl, getYouTubeVideoId, getVimeoVideoId, onCanComplete, initialWatchedTime, retryCount]);
+
+  const handleRetry = useCallback(() => {
+    setRetryCount(prev => prev + 1);
+    setIsLoading(true);
+    setHasError(false);
+  }, []);
 
   if (isYouTube) {
     return (
       <div className="relative w-full">
-        <div ref={containerRef} className="aspect-video w-full" />
+        <div ref={containerRef} className="aspect-video w-full bg-black" />
+        {isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+            <Loader2 className="h-12 w-12 text-white animate-spin mb-4" />
+            <p className="text-white text-sm">Video yükleniyor...</p>
+          </div>
+        )}
+        {hasError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
+            <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+            <p className="text-white text-sm mb-4">Video yüklenemedi. Lütfen tekrar deneyin.</p>
+            <Button 
+              variant="outline" 
+              onClick={handleRetry}
+              className="text-white border-white/50"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Tekrar Dene
+            </Button>
+          </div>
+        )}
         <div className="absolute bottom-0 left-0 right-0 bg-black/80 p-2">
           <div className="flex items-center justify-between text-white text-xs mb-1">
             <span className="flex items-center gap-1">
