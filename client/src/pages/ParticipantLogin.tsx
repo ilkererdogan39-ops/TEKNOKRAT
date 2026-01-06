@@ -75,6 +75,13 @@ export default function ParticipantLogin() {
         if (saved) {
           const { employeeId, email } = JSON.parse(saved);
           const response = await apiRequest("POST", "/api/participants/identify", { employeeId, email });
+          
+          if (!response.ok) {
+            localStorage.removeItem(SAVED_CREDENTIALS_KEY);
+            setStep("identify");
+            return;
+          }
+          
           const result = await response.json();
           
           if (result.hasPassword) {

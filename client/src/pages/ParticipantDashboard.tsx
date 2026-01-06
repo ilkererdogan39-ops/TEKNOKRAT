@@ -62,6 +62,8 @@ export default function ParticipantDashboard() {
       return res.json();
     },
     enabled: !!session?.participantId,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const { data: myMessages = [], isLoading: loadingMessages } = useQuery<Message[]>({
@@ -72,6 +74,8 @@ export default function ParticipantDashboard() {
       return res.json();
     },
     enabled: !!session?.participantId,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const completeMutation = useMutation({
