@@ -551,15 +551,27 @@ export default function ParticipantDashboard() {
             </div>
           </DialogHeader>
           {selectedTraining && isProgressFetched ? (
-            <VideoPlayer
-              videoUrl={selectedTraining.training.videoUrl}
-              onCanComplete={setCanComplete}
-              assignmentId={selectedTraining.assignment.id}
-              initialWatchedTime={videoProgress?.watchedSeconds || 0}
-              onProgressChange={(progress, watchedTime) => 
-                saveVideoProgress(selectedTraining.assignment.id, progress, watchedTime)
-              }
-            />
+            <div className="relative">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="absolute top-4 left-4 z-10 bg-black/70 text-white border-white/20 hover:bg-black/90"
+                onClick={handleVideoClose}
+                data-testid="button-video-back-overlay"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Geri Dön
+              </Button>
+              <VideoPlayer
+                videoUrl={selectedTraining.training.videoUrl}
+                onCanComplete={setCanComplete}
+                assignmentId={selectedTraining.assignment.id}
+                initialWatchedTime={videoProgress?.watchedSeconds || 0}
+                onProgressChange={(progress, watchedTime) => 
+                  saveVideoProgress(selectedTraining.assignment.id, progress, watchedTime)
+                }
+              />
+            </div>
           ) : selectedTraining && (
             <div className="aspect-video flex items-center justify-center">
               <Loader2 className="h-8 w-8 text-white animate-spin" />
