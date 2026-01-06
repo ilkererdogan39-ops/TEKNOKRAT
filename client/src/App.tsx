@@ -10,6 +10,7 @@ import AdminLogin from "@/pages/AdminLogin";
 import ParticipantLogin from "@/pages/ParticipantLogin";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ParticipantDashboard from "@/pages/ParticipantDashboard";
+import Maintenance from "@/pages/Maintenance";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/participant/login" component={ParticipantLogin} />
       <Route path="/participant/dashboard" component={ParticipantDashboard} />
+      <Route path="/maintenance" component={Maintenance} />
       <Route component={NotFound} />
     </Switch>
   );

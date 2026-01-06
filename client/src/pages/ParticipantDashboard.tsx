@@ -57,6 +57,16 @@ export default function ParticipantDashboard() {
   const lastSaveTimeRef = useRef<number>(0);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
 
+  const { data: systemStatus } = useQuery<{ maintenanceMode: boolean }>({
+    queryKey: ["/api/system/status"],
+  });
+
+  useEffect(() => {
+    if (systemStatus?.maintenanceMode) {
+      setLocation("/maintenance");
+    }
+  }, [systemStatus?.maintenanceMode, setLocation]);
+
   const { data: videoProgress, refetch: refetchProgress, isFetched: isProgressFetched } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
     queryKey: ["/api/video-progress", selectedTraining?.assignment.id],
     queryFn: async () => {

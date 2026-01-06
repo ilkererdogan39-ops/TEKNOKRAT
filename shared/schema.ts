@@ -60,6 +60,13 @@ export const videoWatchLogs = pgTable("video_watch_logs", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const systemSettings = pgTable("system_settings", {
+  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 100 }).notNull().unique(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export type Participant = typeof participants.$inferSelect;
 export type InsertParticipantDB = typeof participants.$inferInsert;
 export type Training = typeof trainings.$inferSelect;
@@ -72,6 +79,8 @@ export type User = typeof users.$inferSelect;
 export type InsertUserDB = typeof users.$inferInsert;
 export type VideoWatchLog = typeof videoWatchLogs.$inferSelect;
 export type InsertVideoWatchLogDB = typeof videoWatchLogs.$inferInsert;
+export type SystemSetting = typeof systemSettings.$inferSelect;
+export type InsertSystemSettingDB = typeof systemSettings.$inferInsert;
 
 export type SafeParticipant = Omit<Participant, "password">;
 

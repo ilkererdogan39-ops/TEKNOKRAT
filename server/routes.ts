@@ -216,6 +216,30 @@ export async function registerRoutes(
 
   // Admin password state (stored in memory for this session)
   let adminPassword = ADMIN_CREDENTIALS.password;
+  
+  // Get system status
+  app.get("/api/system/status", async (_req, res) => {
+    try {
+      const maintenanceMode = await storage.getSystemSetting("maintenanceMode");
+      res.json({ maintenanceMode: maintenanceMode === "true" });
+    } catch (error) {
+      res.json({ maintenanceMode: false });
+    }
+  });
+
+  // Toggle system maintenance mode (admin only)
+  app.post("/api/system/maintenance", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      if (typeof enabled !== "boolean") {
+        return res.status(400).json({ error: "enabled must be a boolean" });
+      }
+      await storage.setSystemSetting("maintenanceMode", String(enabled));
+      res.json({ maintenanceMode: enabled });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update maintenance mode" });
+    }
+  });
 
   // Admin change password
   app.post("/api/admin/change-password", async (req, res) => {

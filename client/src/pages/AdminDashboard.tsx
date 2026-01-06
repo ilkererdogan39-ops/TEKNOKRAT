@@ -18,7 +18,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { LogOut, Users, BookOpen, BarChart3, GraduationCap, CheckCircle, Clock, Mail, Key, Loader2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { LogOut, Users, BookOpen, BarChart3, GraduationCap, CheckCircle, Clock, Mail, Key, Loader2, Power } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 import type { SafeParticipant, TrainingAssignment as TAssignment, Training, Message } from "@shared/schema";
 
 const changePasswordSchema = z.object({
@@ -60,6 +63,29 @@ export default function AdminDashboard() {
     },
     onError: (error: Error) => {
       toast({ title: "Hata", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const { data: systemStatus } = useQuery<{ maintenanceMode: boolean }>({
+    queryKey: ["/api/system/status"],
+  });
+
+  const maintenanceMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await apiRequest("POST", "/api/system/maintenance", { enabled });
+      if (!res.ok) {
+        throw new Error("Failed to update maintenance mode");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/system/status"] });
+      toast({
+        title: data.maintenanceMode ? "Sistem Kapatıldı" : "Sistem Açıldı",
+        description: data.maintenanceMode
+          ? "Katılımcılar bakım sayfasını görecek."
+          : "Katılımcılar artık sisteme erişebilir.",
+      });
     },
   });
 
@@ -113,6 +139,19 @@ export default function AdminDashboard() {
             <h1 className="text-xl font-semibold hidden sm:block">Yönetim Paneli</h1>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md">
+              <Power className={`h-4 w-4 ${systemStatus?.maintenanceMode ? "text-destructive" : "text-chart-2"}`} />
+              <Label htmlFor="maintenance-toggle" className="text-sm cursor-pointer hidden sm:block">
+                {systemStatus?.maintenanceMode ? "Kapalı" : "Açık"}
+              </Label>
+              <Switch
+                id="maintenance-toggle"
+                checked={!systemStatus?.maintenanceMode}
+                onCheckedChange={(checked) => maintenanceMutation.mutate(!checked)}
+                disabled={maintenanceMutation.isPending}
+                data-testid="switch-maintenance"
+              />
+            </div>
             <Button
               variant="ghost"
               size="icon"

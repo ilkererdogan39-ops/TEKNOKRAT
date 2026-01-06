@@ -15,7 +15,8 @@ import {
   trainingAssignments,
   messages,
   users,
-  videoWatchLogs
+  videoWatchLogs,
+  systemSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -62,6 +63,9 @@ export interface IStorage {
   saveVideoProgress(data: SaveVideoProgress): Promise<VideoWatchLog>;
   getVideoWatchLogs(assignmentId: string): Promise<VideoWatchLog[]>;
   updateAssignmentProgress(assignmentId: string, progress: number): Promise<void>;
+  
+  getSystemSetting(key: string): Promise<string | undefined>;
+  setSystemSetting(key: string, value: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -322,6 +326,22 @@ export class DatabaseStorage implements IStorage {
     await db.update(trainingAssignments)
       .set({ progress: Math.round(progress) })
       .where(eq(trainingAssignments.id, assignmentId));
+  }
+
+  async getSystemSetting(key: string): Promise<string | undefined> {
+    const result = await db.select().from(systemSettings).where(eq(systemSettings.key, key));
+    return result[0]?.value;
+  }
+
+  async setSystemSetting(key: string, value: string): Promise<void> {
+    const existing = await this.getSystemSetting(key);
+    if (existing !== undefined) {
+      await db.update(systemSettings)
+        .set({ value, updatedAt: new Date() })
+        .where(eq(systemSettings.key, key));
+    } else {
+      await db.insert(systemSettings).values({ key, value });
+    }
   }
 }
 
