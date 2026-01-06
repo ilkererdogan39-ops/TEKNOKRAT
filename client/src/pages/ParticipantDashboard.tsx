@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -18,9 +18,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Clock, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft } from "lucide-react";
+import { LogOut, BookOpen, CheckCircle, Play, GraduationCap, Video, Loader2, X, MessageSquare, Send, Mail, Reply, ArrowLeft } from "lucide-react";
 import type { Training, TrainingAssignment, Message } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
+import VideoPlayer from "@/components/VideoPlayer";
 
 const messageSchema = z.object({
   subject: z.string().min(1, "Konu gerekli"),
@@ -34,30 +35,18 @@ interface AssignmentWithTraining {
 
 type MessageForm = z.infer<typeof messageSchema>;
 
-const MIN_WATCH_TIME_SECONDS = 30;
-
 export default function ParticipantDashboard() {
   const [, setLocation] = useLocation();
   const { session, participant, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
   const [activeTab, setActiveTab] = useState("trainings");
-  const [watchTime, setWatchTime] = useState(0);
-  const watchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [canComplete, setCanComplete] = useState(false);
 
   useEffect(() => {
-    if (selectedTraining && !selectedTraining.assignment.completed) {
-      setWatchTime(0);
-      watchTimerRef.current = setInterval(() => {
-        setWatchTime(prev => prev + 1);
-      }, 1000);
+    if (selectedTraining) {
+      setCanComplete(false);
     }
-    return () => {
-      if (watchTimerRef.current) {
-        clearInterval(watchTimerRef.current);
-        watchTimerRef.current = null;
-      }
-    };
   }, [selectedTraining]);
 
   const form = useForm<MessageForm>({
@@ -145,18 +134,6 @@ export default function ParticipantDashboard() {
     ? Math.round((completedCount / myTrainings.length) * 100)
     : 0;
 
-  const getEmbedUrl = (url: string) => {
-    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s]+)/);
-    if (youtubeMatch) {
-      return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1`;
-    }
-    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-    if (vimeoMatch) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
-    }
-    return url;
-  };
-
   const getVideoThumbnail = (url: string) => {
     const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\s]+)/);
     if (youtubeMatch) {
@@ -173,7 +150,7 @@ export default function ParticipantDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/")}
+              onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -509,29 +486,19 @@ export default function ParticipantDashboard() {
               </Button>
             </div>
           </DialogHeader>
-          <div className="aspect-video w-full">
-            {selectedTraining && (
-              <iframe
-                src={getEmbedUrl(selectedTraining.training.videoUrl)}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            )}
-          </div>
+          {selectedTraining && (
+            <VideoPlayer
+              videoUrl={selectedTraining.training.videoUrl}
+              onCanComplete={setCanComplete}
+            />
+          )}
           {selectedTraining && !selectedTraining.assignment.completed && (
             <div className="p-4 bg-black/90 border-t border-white/10">
-              {watchTime < MIN_WATCH_TIME_SECONDS ? (
+              {!canComplete ? (
                 <div className="text-center">
-                  <p className="text-white/70 text-sm mb-2">
-                    Videoyu izlemeye devam edin
+                  <p className="text-white/70 text-sm">
+                    Videoyu izlemeye devam edin - tamamlamak için tüm videoyu izlemeniz gerekiyor
                   </p>
-                  <div className="flex items-center justify-center gap-2 text-white">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm">
-                      {MIN_WATCH_TIME_SECONDS - watchTime} saniye kaldı
-                    </span>
-                  </div>
                 </div>
               ) : (
                 <Button
