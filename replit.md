@@ -104,3 +104,35 @@ shared/
 - Run `npm run db:push` to sync database schema
 - Frontend serves on port 5000
 - Hot module replacement enabled
+
+## Architecture Documentation
+
+Detailed architecture documentation is available in `docs/architecture/`:
+
+| Document | Description |
+|----------|-------------|
+| [README.md](docs/architecture/README.md) | Overview and roadmap |
+| [routing-migration.md](docs/architecture/routing-migration.md) | Wouter → React Router migration plan |
+| [backend-layering.md](docs/architecture/backend-layering.md) | Controller-Service-Repository architecture |
+| [notification-design.md](docs/architecture/notification-design.md) | Email and background job design |
+| [testing-strategy.md](docs/architecture/testing-strategy.md) | Test pyramid and CI/CD setup |
+| [drizzle-vs-prisma.md](docs/architecture/drizzle-vs-prisma.md) | ORM comparison and rationale |
+
+## Modernization Roadmap
+
+### Phase 1: Stabilization (1-2 weeks)
+- [ ] Wouter → React Router migration
+- [ ] Backend layered architecture (Controller-Service-Repository)
+- [ ] Centralized error handler and validation middleware
+- [ ] Basic test infrastructure (Vitest)
+
+### Phase 2: Enterprise Infrastructure (2-4 weeks)
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Redis + BullMQ notification system
+- [ ] Email notification service (Resend)
+- [ ] Comprehensive test coverage (80%+)
+
+### Phase 3: Future Vision (Optional)
+- [ ] Next.js migration (SSR/SSG)
+- [ ] NestJS backend
+- [ ] Microservices architecture
