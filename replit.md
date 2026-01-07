@@ -79,7 +79,7 @@ A Corporate Training Management System built in Turkish. The platform enables or
 
 ## Security
 - Passwords are stripped from all API responses
-- Admin credentials: username `admin`, password `admin123`
+- Admin credentials: username `admin`, password `1`
 - Data persists in PostgreSQL database (survives server restarts)
 - Video progress ownership validated before saving
 
@@ -167,5 +167,21 @@ Detailed architecture documentation is available in `docs/architecture/`:
 
 ### Phase 3: Future Vision (Optional)
 - [ ] Next.js migration (SSR/SSG)
-- [ ] NestJS backend
+- [x] NestJS backend - **Evaluated but not adopted**: tsx runtime doesn't support emitDecoratorMetadata required for NestJS DI. Express with layered architecture provides equivalent patterns.
 - [ ] Microservices architecture
+
+## Architecture Decision: Express vs NestJS
+
+**Decision**: Keep Express with strict layered architecture (Repository-Service-Routes pattern)
+
+**Rationale**:
+1. **tsx Compatibility**: NestJS requires `emitDecoratorMetadata` for dependency injection, which tsx doesn't support properly
+2. **Pattern Equivalence**: Express with Repository-Service-Routes provides same separation of concerns as NestJS
+3. **Simpler Stack**: No additional runtime dependencies or decorator complexity
+4. **Proven Stability**: Current architecture has 55+ passing tests
+
+**Current Architecture Layers**:
+- **Routes** (server/routes.ts): Thin HTTP layer, request validation, delegates to services
+- **Services** (server/services/): Business logic, orchestrates repositories
+- **Repositories** (server/repositories/): Data access abstraction, Drizzle ORM queries
+- **Middleware** (server/middleware/): Cross-cutting concerns (error handling, validation)
