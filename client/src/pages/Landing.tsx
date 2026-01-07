@@ -1,10 +1,10 @@
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Users, GraduationCap, Shield, BookOpen } from "lucide-react";
 
 export default function Landing() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -38,7 +38,7 @@ export default function Landing() {
         <div className="flex flex-col md:flex-row gap-8 max-w-4xl w-full px-4">
           <Card 
             className="flex-1 bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 dark:hover:bg-white/10 group"
-            onClick={() => setLocation("/admin/login")}
+            onClick={() => navigate("/admin/login")}
             data-testid="card-admin-panel"
           >
             <CardHeader className="text-center pb-4">
@@ -72,7 +72,7 @@ export default function Landing() {
 
           <Card 
             className="flex-1 bg-white/10 dark:bg-white/5 backdrop-blur-md border-white/20 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:bg-white/20 dark:hover:bg-white/10 group"
-            onClick={() => setLocation("/participant/login")}
+            onClick={() => navigate("/participant/login")}
             data-testid="card-participant-panel"
           >
             <CardHeader className="text-center pb-4">

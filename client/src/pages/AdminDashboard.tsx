@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,7 +36,7 @@ const changePasswordSchema = z.object({
 type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
 export default function AdminDashboard() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { session, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
@@ -113,13 +113,13 @@ export default function AdminDashboard() {
   }
 
   if (!session || session.role !== "admin") {
-    setLocation("/admin/login");
+    navigate("/admin/login");
     return null;
   }
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    navigate("/");
   };
 
   const completedAssignments = assignments.filter(a => a.completed).length;

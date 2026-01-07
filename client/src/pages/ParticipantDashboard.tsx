@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,7 +47,7 @@ interface AssignmentWithTraining {
 type MessageForm = z.infer<typeof messageSchema>;
 
 export default function ParticipantDashboard() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { session, participant, logout, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [selectedTraining, setSelectedTraining] = useState<AssignmentWithTraining | null>(null);
@@ -63,9 +63,9 @@ export default function ParticipantDashboard() {
 
   useEffect(() => {
     if (systemStatus?.maintenanceMode) {
-      setLocation("/maintenance");
+      navigate("/maintenance");
     }
-  }, [systemStatus?.maintenanceMode, setLocation]);
+  }, [systemStatus?.maintenanceMode, navigate]);
 
   const { data: videoProgress, refetch: refetchProgress, isFetched: isProgressFetched } = useQuery<VideoWatchLog | { watchedSeconds: number; progressPercent: number }>({
     queryKey: ["/api/video-progress", selectedTraining?.assignment.id],
@@ -220,13 +220,13 @@ export default function ParticipantDashboard() {
   }
 
   if (!session || session.role !== "participant") {
-    setLocation("/participant/login");
+    navigate("/participant/login");
     return null;
   }
 
   const handleLogout = () => {
     logout();
-    setLocation("/");
+    navigate("/");
   };
 
   const completedCount = myTrainings.filter(t => t.assignment.completed).length;
@@ -251,7 +251,7 @@ export default function ParticipantDashboard() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/")}
+              onClick={() => navigate("/")}
               data-testid="button-back"
             >
               <ArrowLeft className="h-5 w-5" />

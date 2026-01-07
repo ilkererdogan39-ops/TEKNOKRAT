@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,7 +21,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function AdminLogin() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +45,7 @@ export default function AdminLogin() {
         title: "Giriş Başarılı",
         description: "Yönetim paneline yönlendiriliyorsunuz...",
       });
-      setLocation("/admin/dashboard");
+      navigate("/admin/dashboard");
     } else {
       toast({
         title: "Giriş Başarısız",
@@ -133,7 +133,7 @@ export default function AdminLogin() {
                 type="button"
                 variant="ghost" 
                 className="w-full"
-                onClick={() => setLocation("/")}
+                onClick={() => navigate("/")}
                 data-testid="button-back-home"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />

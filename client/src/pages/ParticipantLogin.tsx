@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,7 +41,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 type Step = "identify" | "set-password" | "login" | "checking";
 
 export default function ParticipantLogin() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -59,9 +59,9 @@ export default function ParticipantLogin() {
 
   useEffect(() => {
     if (systemStatus?.maintenanceMode) {
-      setLocation("/maintenance");
+      navigate("/maintenance");
     }
-  }, [systemStatus?.maintenanceMode, setLocation]);
+  }, [systemStatus?.maintenanceMode, navigate]);
 
   const identifyForm = useForm<IdentifyForm>({
     resolver: zodResolver(identifySchema),
@@ -174,7 +174,7 @@ export default function ParticipantLogin() {
         title: "Şifre Belirlendi",
         description: `Hoş geldiniz, ${participant.fullName}!`,
       });
-      setLocation("/participant/dashboard");
+      navigate("/participant/dashboard");
     } catch (error) {
       toast({
         title: "Hata",
@@ -203,7 +203,7 @@ export default function ParticipantLogin() {
         title: "Giriş Başarılı",
         description: `Hoş geldiniz, ${participant.fullName}!`,
       });
-      setLocation("/participant/dashboard");
+      navigate("/participant/dashboard");
     } catch (error) {
       toast({
         title: "Giriş Başarısız",
@@ -313,7 +313,7 @@ export default function ParticipantLogin() {
                   type="button"
                   variant="ghost" 
                   className="w-full"
-                  onClick={() => setLocation("/")}
+                  onClick={() => navigate("/")}
                   data-testid="button-back-home"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
