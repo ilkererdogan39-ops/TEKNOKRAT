@@ -42,7 +42,7 @@ A Corporate Training Management System built in Turkish. The platform enables or
 
 ### Testing
 - Vitest for unit testing
-- 37 passing tests across 3 test files
+- 55 passing tests across 5 test files
 - Run tests: `npx vitest run`
 
 ### Database
@@ -118,6 +118,8 @@ server/
 │   └── systemService.ts
 ├── tests/                  # Unit tests (Vitest)
 │   ├── participantService.test.ts
+│   ├── trainingService.test.ts
+│   ├── assignmentService.test.ts
 │   ├── errorHandler.test.ts
 │   └── systemService.test.ts
 ├── db.ts                   # Database connection (Drizzle + PostgreSQL)
@@ -154,7 +156,7 @@ Detailed architecture documentation is available in `docs/architecture/`:
 - [x] Backend layered architecture (Repository-Service pattern)
 - [x] Centralized error handler with custom error classes
 - [x] Zod-based validation middleware
-- [x] Basic test infrastructure (Vitest with 37 passing tests)
+- [x] Basic test infrastructure (Vitest with 55 passing tests)
 
 ### Phase 2: Enterprise Infrastructure (2-4 weeks)
 - [ ] CI/CD pipeline (GitHub Actions)

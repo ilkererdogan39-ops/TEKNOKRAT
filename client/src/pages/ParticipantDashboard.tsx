@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -220,8 +220,7 @@ export default function ParticipantDashboard() {
   }
 
   if (!session || session.role !== "participant") {
-    navigate("/participant/login");
-    return null;
+    return <Navigate to="/participant/login" replace />;
   }
 
   const handleLogout = () => {
