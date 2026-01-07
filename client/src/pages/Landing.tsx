@@ -61,7 +61,7 @@ export default function Landing() {
           </div>
           
           <p className="text-xl md:text-2xl font-light text-blue-100/90 tracking-wide mb-3">
-            Kurumsal Egitim ve Gelisim Sistemi
+            Kurumsal Eğitim ve Gelişim Sistemi
           </p>
           <p className="text-sm text-blue-300/70 font-light tracking-widest uppercase mb-8">
             Enterprise Learning Management Platform
@@ -70,15 +70,15 @@ export default function Landing() {
           <div className="flex flex-wrap justify-center gap-6 text-xs text-blue-200/60 mb-8">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-cyan-400" />
-              <span>Video Egitim</span>
+              <span>Video Eğitim</span>
             </div>
             <div className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-cyan-400" />
-              <span>Ilerleme Takibi</span>
+              <span>İlerleme Takibi</span>
             </div>
             <div className="flex items-center gap-2">
               <Video className="w-4 h-4 text-cyan-400" />
-              <span>Canli Izleme</span>
+              <span>Canlı İzleme</span>
             </div>
           </div>
         </div>
@@ -98,29 +98,29 @@ export default function Landing() {
                   </div>
                 </div>
                 <CardTitle className="text-2xl font-bold text-white tracking-tight">
-                  Yonetim Paneli
+                  Yönetim Paneli
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-8">
                 <CardDescription className="text-blue-100/80 text-center text-sm mb-6">
-                  Egitim atama, kisi yonetimi ve raporlama
+                  Eğitim atama, kişi yönetimi ve raporlama
                 </CardDescription>
                 <ul className="space-y-3 text-sm text-blue-100/70">
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Katilimci yonetimi</span>
+                    <span>Katılımcı yönetimi</span>
                   </li>
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <BookOpen className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Egitim atama ve takip</span>
+                    <span>Eğitim atama ve takip</span>
                   </li>
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <BarChart3 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Detayli raporlama</span>
+                    <span>Detaylı raporlama</span>
                   </li>
                 </ul>
                 <div className="mt-6 flex items-center justify-center gap-2 text-blue-300 group-hover:text-cyan-300 transition-colors text-sm font-medium">
-                  <span>Giris Yap</span>
+                  <span>Giriş Yap</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </CardContent>
@@ -141,29 +141,29 @@ export default function Landing() {
                   </div>
                 </div>
                 <CardTitle className="text-2xl font-bold text-white tracking-tight">
-                  Katilimci Paneli
+                  Katılımcı Paneli
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-8">
                 <CardDescription className="text-blue-100/80 text-center text-sm mb-6">
-                  Egitim izleme ve gelisim takibi
+                  Eğitim izleme ve gelişim takibi
                 </CardDescription>
                 <ul className="space-y-3 text-sm text-blue-100/70">
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <Video className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Atanan egitimleri izle</span>
+                    <span>Atanan eğitimleri izle</span>
                   </li>
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Ilerleme durumunu takip et</span>
+                    <span>İlerleme durumunu takip et</span>
                   </li>
                   <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
                     <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
-                    <span>Yonetimle iletisim</span>
+                    <span>Yönetimle iletişim</span>
                   </li>
                 </ul>
                 <div className="mt-6 flex items-center justify-center gap-2 text-blue-300 group-hover:text-cyan-300 transition-colors text-sm font-medium">
-                  <span>Giris Yap</span>
+                  <span>Giriş Yap</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </CardContent>
@@ -181,6 +181,17 @@ export default function Landing() {
             Enterprise Learning Platform v2.0
           </p>
         </div>
+      </div>
+
+      {/* Footer Attribution */}
+      <div className="absolute bottom-4 left-4 z-10">
+        <p 
+          className="text-xs text-blue-300/50"
+          style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
+          data-testid="text-system-architect"
+        >
+          Sistem mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.E
+        </p>
       </div>
     </div>
   );

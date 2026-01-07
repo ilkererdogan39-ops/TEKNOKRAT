@@ -58,12 +58,14 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/20 via-transparent to-transparent" />
+      
+      <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md bg-card">
+      <Card className="w-full max-w-md bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-white/20 dark:border-slate-700/50 shadow-2xl relative z-10">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto p-3 bg-primary/10 rounded-xl">
             <Shield className="h-8 w-8 text-primary" />
@@ -145,6 +147,17 @@ export default function AdminLogin() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Footer Attribution */}
+      <div className="absolute bottom-4 left-4 z-10">
+        <p 
+          className="text-xs text-slate-400/70 dark:text-slate-500/70"
+          style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
+          data-testid="text-system-architect"
+        >
+          Sistem mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.E
+        </p>
+      </div>
     </div>
   );
 }
