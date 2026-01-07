@@ -230,21 +230,21 @@ export default function ParticipantLogin() {
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-white/20 dark:border-slate-700/50 shadow-2xl relative z-10">
+      <Card className="w-full max-w-md bg-slate-800/90 backdrop-blur-sm border-slate-700/50 shadow-2xl relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto p-3 bg-primary/10 rounded-xl">
-            {step === "checking" && <Loader2 className="h-8 w-8 text-primary animate-spin" />}
-            {step === "identify" && <Users className="h-8 w-8 text-primary" />}
-            {step === "set-password" && <KeyRound className="h-8 w-8 text-primary" />}
-            {step === "login" && <CheckCircle className="h-8 w-8 text-primary" />}
+          <div className="mx-auto p-3 bg-cyan-500/20 rounded-xl">
+            {step === "checking" && <Loader2 className="h-8 w-8 text-cyan-400 animate-spin" />}
+            {step === "identify" && <Users className="h-8 w-8 text-cyan-400" />}
+            {step === "set-password" && <KeyRound className="h-8 w-8 text-cyan-400" />}
+            {step === "login" && <CheckCircle className="h-8 w-8 text-cyan-400" />}
           </div>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-2xl font-semibold text-white">
             {step === "checking" && "Kontrol Ediliyor..."}
             {step === "identify" && "Katılımcı Girişi"}
             {step === "set-password" && "Şifre Belirleme"}
             {step === "login" && "Hoş Geldiniz"}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-slate-300">
             {step === "checking" && "Lütfen bekleyin..."}
             {step === "identify" && "Sicil numaranız ve e-posta adresinizi giriniz"}
             {step === "set-password" && `${participantInfo?.fullName}, ilk girişiniz için bir şifre belirleyin`}
@@ -260,11 +260,12 @@ export default function ParticipantLogin() {
                   name="employeeId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sicil Numarası</FormLabel>
+                      <FormLabel className="text-slate-200">Sicil Numarası</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Sicil numaranızı giriniz" 
                           data-testid="input-employee-id"
+                          className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                           {...field} 
                         />
                       </FormControl>
@@ -278,12 +279,13 @@ export default function ParticipantLogin() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>E-Posta</FormLabel>
+                      <FormLabel className="text-slate-200">E-Posta</FormLabel>
                       <FormControl>
                         <Input 
                           type="email"
                           placeholder="E-posta adresinizi giriniz" 
                           data-testid="input-participant-email"
+                          className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                           {...field} 
                         />
                       </FormControl>
@@ -314,7 +316,7 @@ export default function ParticipantLogin() {
                 <Button 
                   type="button"
                   variant="ghost" 
-                  className="w-full"
+                  className="w-full text-slate-300 hover:text-white"
                   onClick={() => navigate("/")}
                   data-testid="button-back-home"
                 >
@@ -333,12 +335,13 @@ export default function ParticipantLogin() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Yeni Şifre</FormLabel>
+                      <FormLabel className="text-slate-200">Yeni Şifre</FormLabel>
                       <FormControl>
                         <Input 
                           type="password" 
                           placeholder="En az 4 karakter"
                           data-testid="input-new-password"
+                          className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                           {...field} 
                         />
                       </FormControl>
@@ -352,12 +355,13 @@ export default function ParticipantLogin() {
                   name="confirmPassword"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Şifre Tekrar</FormLabel>
+                      <FormLabel className="text-slate-200">Şifre Tekrar</FormLabel>
                       <FormControl>
                         <Input 
                           type="password" 
                           placeholder="Şifrenizi tekrar giriniz"
                           data-testid="input-confirm-password"
+                          className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                           {...field} 
                         />
                       </FormControl>
@@ -388,7 +392,7 @@ export default function ParticipantLogin() {
                 <Button 
                   type="button"
                   variant="ghost" 
-                  className="w-full"
+                  className="w-full text-slate-300 hover:text-white"
                   onClick={resetToIdentify}
                   data-testid="button-back-identify"
                 >
@@ -407,12 +411,13 @@ export default function ParticipantLogin() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Şifre</FormLabel>
+                      <FormLabel className="text-slate-200">Şifre</FormLabel>
                       <FormControl>
                         <Input 
                           type="password" 
                           placeholder="Şifrenizi giriniz"
                           data-testid="input-participant-password"
+                          className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                           {...field} 
                         />
                       </FormControl>
@@ -440,7 +445,7 @@ export default function ParticipantLogin() {
                 <Button 
                   type="button"
                   variant="ghost" 
-                  className="w-full"
+                  className="w-full text-slate-300 hover:text-white"
                   onClick={resetToIdentify}
                   data-testid="button-back-identify"
                 >
@@ -456,11 +461,15 @@ export default function ParticipantLogin() {
       {/* Footer Attribution */}
       <div className="absolute bottom-4 left-4 z-10">
         <p 
-          className="text-xs text-slate-400/70 dark:text-slate-500/70"
+          className="text-xs text-slate-300/60 leading-relaxed"
           style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
           data-testid="text-system-architect"
         >
-          Sistem mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.E
+          Sistem Mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.ERDOĞAN
+          <br />
+          <span className="text-slate-400/50">
+            İletişim: gr_egitim@aydinli.com.tr &amp; ilker.erdogan@aydinli.com.tr
+          </span>
         </p>
       </div>
     </div>

@@ -65,13 +65,13 @@ export default function AdminLogin() {
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-white/20 dark:border-slate-700/50 shadow-2xl relative z-10">
+      <Card className="w-full max-w-md bg-slate-800/90 backdrop-blur-sm border-slate-700/50 shadow-2xl relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto p-3 bg-primary/10 rounded-xl">
-            <Shield className="h-8 w-8 text-primary" />
+          <div className="mx-auto p-3 bg-indigo-500/20 rounded-xl">
+            <Shield className="h-8 w-8 text-indigo-400" />
           </div>
-          <CardTitle className="text-2xl font-semibold">Yönetici Girişi</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-semibold text-white">Yönetici Girişi</CardTitle>
+          <CardDescription className="text-slate-300">
             Yönetim paneline erişmek için giriş yapın
           </CardDescription>
         </CardHeader>
@@ -83,13 +83,13 @@ export default function AdminLogin() {
                 name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Kullanıcı Adı</FormLabel>
+                    <FormLabel className="text-slate-200">Kullanıcı Adı</FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Kullanıcı adınızı giriniz" 
                         data-testid="input-admin-username"
                         readOnly
-                        className="bg-muted"
+                        className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                         {...field} 
                       />
                     </FormControl>
@@ -103,12 +103,13 @@ export default function AdminLogin() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Şifre</FormLabel>
+                    <FormLabel className="text-slate-200">Şifre</FormLabel>
                     <FormControl>
                       <Input 
                         type="password" 
                         placeholder="Şifrenizi giriniz"
                         data-testid="input-admin-password"
+                        className="bg-slate-700/50 border-slate-600 text-slate-200 placeholder:text-slate-400"
                         {...field} 
                       />
                     </FormControl>
@@ -136,7 +137,7 @@ export default function AdminLogin() {
               <Button 
                 type="button"
                 variant="ghost" 
-                className="w-full"
+                className="w-full text-slate-300 hover:text-white"
                 onClick={() => navigate("/")}
                 data-testid="button-back-home"
               >
@@ -151,11 +152,15 @@ export default function AdminLogin() {
       {/* Footer Attribution */}
       <div className="absolute bottom-4 left-4 z-10">
         <p 
-          className="text-xs text-slate-400/70 dark:text-slate-500/70"
+          className="text-xs text-slate-300/60 leading-relaxed"
           style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
           data-testid="text-system-architect"
         >
-          Sistem mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.E
+          Sistem Mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.ERDOĞAN
+          <br />
+          <span className="text-slate-400/50">
+            İletişim: gr_egitim@aydinli.com.tr &amp; ilker.erdogan@aydinli.com.tr
+          </span>
         </p>
       </div>
     </div>

@@ -186,11 +186,15 @@ export default function Landing() {
       {/* Footer Attribution */}
       <div className="absolute bottom-4 left-4 z-10">
         <p 
-          className="text-xs text-blue-300/50"
+          className="text-xs text-blue-300/50 leading-relaxed"
           style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
           data-testid="text-system-architect"
         >
-          Sistem mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.E
+          Sistem Mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.ERDOĞAN
+          <br />
+          <span className="text-blue-300/40">
+            İletişim: gr_egitim@aydinli.com.tr &amp; ilker.erdogan@aydinli.com.tr
+          </span>
         </p>
       </div>
     </div>
