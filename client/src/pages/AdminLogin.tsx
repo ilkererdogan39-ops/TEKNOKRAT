@@ -29,7 +29,7 @@ export default function AdminLogin() {
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      username: "admin",
       password: "",
     },
   });
@@ -86,6 +86,8 @@ export default function AdminLogin() {
                       <Input 
                         placeholder="Kullanıcı adınızı giriniz" 
                         data-testid="input-admin-username"
+                        readOnly
+                        className="bg-muted"
                         {...field} 
                       />
                     </FormControl>

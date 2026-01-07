@@ -5,13 +5,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { BarChart3, Users, CheckCircle, Clock, TrendingUp, RefreshCw, Eye } from "lucide-react";
-import type { SafeParticipant, Training, TrainingAssignment } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { BarChart3, Users, CheckCircle, Clock, TrendingUp, RefreshCw, Eye, Download, ChevronRight, LineChart as LineChartIcon } from "lucide-react";
+import type { SafeParticipant, Training, TrainingAssignment, VideoWatchLog } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area } from "recharts";
+import { useToast } from "@/hooks/use-toast";
 
 export function Reports() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [selectedParticipant, setSelectedParticipant] = useState<SafeParticipant | null>(null);
+  const { toast } = useToast();
   
   const { data: participants = [], isLoading: loadingParticipants, dataUpdatedAt: participantsUpdatedAt } = useQuery<SafeParticipant[]>({
     queryKey: ["/api/participants"],
@@ -75,6 +80,62 @@ export function Reports() {
   const totalAssigned = assignments.length;
   const totalCompleted = assignments.filter(a => a.completed).length;
   const overallRate = totalAssigned > 0 ? Math.round((totalCompleted / totalAssigned) * 100) : 0;
+
+  const exportToExcel = () => {
+    const headers = ["Sicil No", "Ad Soyad", "Departman", "E-Posta", "Atanan Egitim", "Video Ilerleme (%)", "Tamamlandi", "Tamamlanma Tarihi"];
+    const rows: string[][] = [];
+    
+    participants.forEach(participant => {
+      const participantAssignments = assignments.filter(a => a.participantId === participant.id);
+      if (participantAssignments.length === 0) {
+        rows.push([
+          participant.employeeId,
+          participant.fullName,
+          participant.department,
+          participant.email,
+          "Egitim atanmamis",
+          "0",
+          "Hayir",
+          ""
+        ]);
+      } else {
+        participantAssignments.forEach(assignment => {
+          const training = trainings.find(t => t.id === assignment.trainingId);
+          rows.push([
+            participant.employeeId,
+            participant.fullName,
+            participant.department,
+            participant.email,
+            training?.title || "Bilinmeyen Egitim",
+            String(assignment.progress || 0),
+            assignment.completed ? "Evet" : "Hayir",
+            assignment.completedAt ? new Date(assignment.completedAt).toLocaleString("tr-TR") : ""
+          ]);
+        });
+      }
+    });
+    
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(";"))
+    ].join("\n");
+    
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `egitim_raporu_${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "Excel Raporu Indirildi",
+      description: "Rapor basariyla CSV formatinda indirildi."
+    });
+  };
 
   if (isLoading) {
     return (
@@ -152,9 +213,20 @@ export function Reports() {
                 Her katılımcının eğitim tamamlama durumu (5 saniyede bir güncellenir)
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <RefreshCw className="h-3 w-3 animate-spin" />
-              Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR')}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportToExcel}
+                data-testid="button-export-excel"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Excel Indir
+              </Button>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                Son guncelleme: {lastUpdated.toLocaleTimeString('tr-TR')}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -227,26 +299,39 @@ export function Reports() {
                           </div>
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
-                          {report.total === 0 ? (
-                            <Badge variant="outline" className="text-muted-foreground">
-                              Eğitim Atanmamış
-                            </Badge>
-                          ) : report.completed === report.total && report.total > 0 ? (
-                            <Badge className="bg-green-500">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Tamamlandı
-                            </Badge>
-                          ) : isActivelyWatching ? (
-                            <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300">
-                              <Eye className="h-3 w-3 mr-1" />
-                              İzliyor
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Beklemede
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {report.total === 0 ? (
+                              <Badge variant="outline" className="text-muted-foreground">
+                                Egitim Atanmamis
+                              </Badge>
+                            ) : report.completed === report.total && report.total > 0 ? (
+                              <Badge className="bg-green-500">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Tamamlandi
+                              </Badge>
+                            ) : isActivelyWatching ? (
+                              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Izliyor
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Beklemede
+                              </Badge>
+                            )}
+                            {report.total > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedParticipant(participant)}
+                                title="Izleme Egrisini Gor"
+                                data-testid={`button-view-curve-${participant.id}`}
+                              >
+                                <LineChartIcon className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -381,6 +466,163 @@ export function Reports() {
           )}
         </CardContent>
       </Card>
+
+      <ViewingCurveDialog
+        participant={selectedParticipant}
+        assignments={assignments}
+        trainings={trainings}
+        onClose={() => setSelectedParticipant(null)}
+      />
     </div>
+  );
+}
+
+function ViewingCurveDialog({
+  participant,
+  assignments,
+  trainings,
+  onClose,
+}: {
+  participant: SafeParticipant | null;
+  assignments: TrainingAssignment[];
+  trainings: Training[];
+  onClose: () => void;
+}) {
+  if (!participant) return null;
+
+  const participantAssignments = assignments.filter(a => a.participantId === participant.id);
+  
+  const chartData = participantAssignments.map(assignment => {
+    const training = trainings.find(t => t.id === assignment.trainingId);
+    return {
+      name: training?.title?.substring(0, 20) + (training?.title && training.title.length > 20 ? "..." : "") || "Egitim",
+      ilerleme: assignment.progress || 0,
+      tamamlandi: assignment.completed ? 100 : 0,
+    };
+  });
+
+  const avgProgress = participantAssignments.length > 0
+    ? Math.round(participantAssignments.reduce((sum, a) => sum + (a.progress || 0), 0) / participantAssignments.length)
+    : 0;
+
+  const completedCount = participantAssignments.filter(a => a.completed).length;
+
+  return (
+    <Dialog open={!!participant} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <LineChartIcon className="h-5 w-5" />
+            {participant.fullName} - Izleme Egrisi
+          </DialogTitle>
+          <DialogDescription>
+            Katilimcinin egitim bazinda video ilerleme durumu
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-2xl font-bold">{participantAssignments.length}</div>
+            <div className="text-xs text-muted-foreground">Atanan Egitim</div>
+          </div>
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-2xl font-bold text-chart-2">{completedCount}</div>
+            <div className="text-xs text-muted-foreground">Tamamlanan</div>
+          </div>
+          <div className="text-center p-3 bg-muted rounded-lg">
+            <div className="text-2xl font-bold text-primary">%{avgProgress}</div>
+            <div className="text-xs text-muted-foreground">Ortalama Ilerleme</div>
+          </div>
+        </div>
+
+        {chartData.length > 0 ? (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorProgress" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fontSize: 11 }}
+                  className="fill-foreground"
+                  angle={-20}
+                  textAnchor="end"
+                  height={60}
+                />
+                <YAxis 
+                  domain={[0, 100]} 
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `%${value}`}
+                  className="fill-foreground"
+                />
+                <Tooltip 
+                  formatter={(value: number, name: string) => [
+                    `%${value}`, 
+                    name === "ilerleme" ? "Video Ilerleme" : "Tamamlandi"
+                  ]}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="ilerleme" 
+                  stroke="hsl(var(--primary))" 
+                  fillOpacity={1} 
+                  fill="url(#colorProgress)" 
+                  name="Video Ilerleme"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">
+            Bu katilimciya henuz egitim atanmamis.
+          </p>
+        )}
+
+        <div className="mt-4 space-y-2">
+          <h4 className="font-medium text-sm">Egitim Detaylari</h4>
+          {participantAssignments.map((assignment) => {
+            const training = trainings.find(t => t.id === assignment.trainingId);
+            return (
+              <div 
+                key={assignment.id} 
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
+                <div className="flex-1">
+                  <p className="font-medium text-sm">{training?.title || "Bilinmeyen Egitim"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Atanma: {new Date(assignment.assignedAt).toLocaleDateString("tr-TR")}
+                    {assignment.completedAt && (
+                      <> - Tamamlama: {new Date(assignment.completedAt).toLocaleDateString("tr-TR")}</>
+                    )}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Progress value={assignment.progress || 0} className="w-24 h-2" />
+                  <span className={`font-bold text-sm min-w-[40px] text-right ${
+                    assignment.completed ? 'text-chart-2' : 'text-primary'
+                  }`}>
+                    %{assignment.progress || 0}
+                  </span>
+                  {assignment.completed && (
+                    <CheckCircle className="h-4 w-4 text-chart-2" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

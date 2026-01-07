@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Upload, Trash2, Pencil, Search, Users, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Upload, Trash2, Pencil, Search, Users, Loader2, AlertTriangle, KeyRound, Check, X } from "lucide-react";
 import { insertParticipantSchema, type SafeParticipant, type InsertParticipant } from "@shared/schema";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +21,8 @@ export function UserManagement() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SafeParticipant | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [resetPasswordUser, setResetPasswordUser] = useState<SafeParticipant | null>(null);
+  const [newPassword, setNewPassword] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: participants = [], isLoading } = useQuery<SafeParticipant[]>({
@@ -82,6 +84,22 @@ export function UserManagement() {
     },
     onError: () => {
       toast({ title: "Hata", description: "Sıfırlama sırasında bir hata oluştu.", variant: "destructive" });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ participantId, newPassword }: { participantId: string; newPassword: string }) => {
+      const res = await apiRequest("POST", "/api/participants/reset-password", { participantId, newPassword });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/participants"] });
+      setResetPasswordUser(null);
+      setNewPassword("");
+      toast({ title: "Sifre Sifirlandi", description: "Katilimci sifresi basariyla sifirlandi." });
+    },
+    onError: () => {
+      toast({ title: "Hata", description: "Sifre sifirlanamadi.", variant: "destructive" });
     },
   });
 
@@ -294,11 +312,32 @@ export function UserManagement() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{participant.department}</TableCell>
                     <TableCell className="hidden lg:table-cell">{participant.email}</TableCell>
-                    <TableCell className="hidden xl:table-cell font-mono text-muted-foreground">
-                      ••••••••
+                    <TableCell className="hidden xl:table-cell">
+                      <div className="flex items-center gap-2">
+                        {participant.hasPassword ? (
+                          <span className="flex items-center gap-1 text-chart-2">
+                            <Check className="h-4 w-4" />
+                            <span className="text-sm">Ayarlandi</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <X className="h-4 w-4" />
+                            <span className="text-sm">Ayarlanmadi</span>
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setResetPasswordUser(participant)}
+                          title="Sifre Sifirla"
+                          data-testid={`button-reset-password-${participant.id}`}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -349,9 +388,9 @@ export function UserManagement() {
       <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Katılımcıyı Düzenle</DialogTitle>
+            <DialogTitle>Katilimciyi Duzenle</DialogTitle>
             <DialogDescription>
-              Katılımcı bilgilerini güncelleyin.
+              Katilimci bilgilerini guncelleyin.
             </DialogDescription>
           </DialogHeader>
           {editingUser && (
@@ -362,6 +401,54 @@ export function UserManagement() {
               isEdit
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && setResetPasswordUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5" />
+              Sifre Sifirla
+            </DialogTitle>
+            <DialogDescription>
+              {resetPasswordUser?.fullName} icin yeni sifre belirleyin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Yeni Sifre</label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="En az 4 karakter"
+                data-testid="input-new-password"
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={newPassword.length < 4 || resetPasswordMutation.isPending}
+              onClick={() => {
+                if (resetPasswordUser) {
+                  resetPasswordMutation.mutate({
+                    participantId: resetPasswordUser.id,
+                    newPassword,
+                  });
+                }
+              }}
+              data-testid="button-confirm-reset-password"
+            >
+              {resetPasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sifirlaniyor...
+                </>
+              ) : (
+                "Sifreyi Sifirla"
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -468,9 +555,13 @@ function ParticipantForm({
               <FormControl>
                 <Input 
                   type="password" 
-                  placeholder={isEdit ? "Yeni şifre (isteğe bağlı)" : "Şifre giriniz"} 
+                  placeholder={isEdit ? "Yeni sifre (istege bagli)" : "Sifre giriniz"} 
                   data-testid="input-password" 
-                  {...field} 
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                 />
               </FormControl>
               <FormMessage />
