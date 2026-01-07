@@ -40,7 +40,7 @@ export default function Landing() {
         <ThemeToggle />
       </div>
       
-      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12 relative z-10">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-12 pb-24 relative z-10">
         <div className="text-center mb-16 animate-fade-in">
           <div className="flex justify-center mb-8">
             <div className="relative">
@@ -86,7 +86,7 @@ export default function Landing() {
         <div className="flex flex-col md:flex-row gap-6 max-w-5xl w-full px-4" data-testid="panel-selection-container">
           <div className="flex-1 transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1" data-testid="admin-panel-wrapper">
             <Card 
-              className="h-full bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 cursor-pointer group overflow-visible shadow-xl shadow-blue-500/10"
+              className="h-full bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 cursor-pointer group overflow-visible shadow-xl shadow-blue-500/20"
               onClick={() => navigate("/admin/login")}
               data-testid="card-admin-panel"
             >
@@ -102,24 +102,24 @@ export default function Landing() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-8">
-                <CardDescription className="text-blue-100/80 text-center text-sm mb-6">
+                <CardDescription className="text-slate-300 text-center text-sm mb-6">
                   Eğitim atama, kişi yönetimi ve raporlama
                 </CardDescription>
-                <ul className="space-y-3 text-sm text-blue-100/70">
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                <ul className="space-y-3 text-sm text-slate-200">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>Katılımcı yönetimi</span>
                   </li>
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <BookOpen className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>Eğitim atama ve takip</span>
                   </li>
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <BarChart3 className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>Detaylı raporlama</span>
                   </li>
                 </ul>
-                <div className="mt-6 flex items-center justify-center gap-2 text-blue-300 group-hover:text-cyan-300 transition-colors text-sm font-medium">
+                <div className="mt-6 flex items-center justify-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors text-sm font-medium">
                   <span>Giriş Yap</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
@@ -129,7 +129,7 @@ export default function Landing() {
 
           <div className="flex-1 transition-transform duration-300 hover:scale-[1.02] hover:-translate-y-1" data-testid="participant-panel-wrapper">
             <Card 
-              className="h-full bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 cursor-pointer group overflow-visible shadow-xl shadow-cyan-500/10"
+              className="h-full bg-slate-800/95 backdrop-blur-xl border border-slate-700/50 cursor-pointer group overflow-visible shadow-xl shadow-cyan-500/20"
               onClick={() => navigate("/participant/login")}
               data-testid="card-participant-panel"
             >
@@ -145,24 +145,24 @@ export default function Landing() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pb-8">
-                <CardDescription className="text-blue-100/80 text-center text-sm mb-6">
+                <CardDescription className="text-slate-300 text-center text-sm mb-6">
                   Eğitim izleme ve gelişim takibi
                 </CardDescription>
-                <ul className="space-y-3 text-sm text-blue-100/70">
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                <ul className="space-y-3 text-sm text-slate-200">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <Video className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>Atanan eğitimleri izle</span>
                   </li>
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <CheckCircle className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>İlerleme durumunu takip et</span>
                   </li>
-                  <li className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5">
+                  <li className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/50 border border-slate-600/30">
                     <Users className="h-4 w-4 text-cyan-400 flex-shrink-0" />
                     <span>Yönetimle iletişim</span>
                   </li>
                 </ul>
-                <div className="mt-6 flex items-center justify-center gap-2 text-blue-300 group-hover:text-cyan-300 transition-colors text-sm font-medium">
+                <div className="mt-6 flex items-center justify-center gap-2 text-cyan-400 group-hover:text-cyan-300 transition-colors text-sm font-medium">
                   <span>Giriş Yap</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </div>
@@ -184,19 +184,23 @@ export default function Landing() {
       </div>
 
       {/* Footer Attribution */}
-      <div className="absolute bottom-4 left-4 z-10">
-        <p 
-          className="text-xs text-blue-300/50 leading-relaxed"
-          style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
-          data-testid="text-system-architect"
-        >
-          Sistem Mimarı: Eğitmen &amp; AI Teknolojileri Mentoru İ.ERDOĞAN
-          <br />
-          <span className="text-blue-300/40">
-            İletişim: gr_egitim@aydinli.com.tr &amp; ilker.erdogan@aydinli.com.tr
-          </span>
-        </p>
-      </div>
+      <footer className="absolute bottom-0 left-0 right-0 py-4 px-6 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800/50 z-10">
+        <div className="max-w-5xl mx-auto">
+          <p 
+            className="text-sm text-slate-300 leading-relaxed text-center md:text-left"
+            style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
+            data-testid="text-system-architect"
+          >
+            <span className="font-medium text-slate-200">Sistem Mimarı:</span> Eğitmen &amp; AI Teknolojileri Mentoru İ.ERDOĞAN
+          </p>
+          <p 
+            className="text-xs text-slate-400 mt-1 text-center md:text-left"
+            style={{ fontFamily: "'Georgia', 'Times New Roman', serif", fontStyle: "italic" }}
+          >
+            <span className="font-medium">İletişim:</span> gr_egitim@aydinli.com.tr &amp; ilker.erdogan@aydinli.com.tr
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
