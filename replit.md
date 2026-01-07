@@ -27,15 +27,23 @@ A Corporate Training Management System built in Turkish. The platform enables or
 
 ### Frontend
 - React with TypeScript
-- Wouter for routing
+- React Router v7 for routing (BrowserRouter/Routes/Route pattern)
 - TanStack Query for data fetching
 - Tailwind CSS with shadcn/ui components
 - Dark mode support via ThemeProvider
 
 ### Backend
-- Express.js API server
+- Express.js API server with layered architecture
+- Middleware layer (errorHandler, validation)
+- Repository layer (data access abstraction)
+- Service layer (business logic)
 - PostgreSQL database with Drizzle ORM
 - Zod for request validation
+
+### Testing
+- Vitest for unit testing
+- 37 passing tests across 3 test files
+- Run tests: `npx vitest run`
 
 ### Database
 - PostgreSQL (Neon-backed)
@@ -88,12 +96,33 @@ client/
 │   │   ├── AuthContext.tsx # Authentication state
 │   │   ├── ThemeProvider.tsx # Dark mode
 │   │   └── queryClient.ts
-│   ├── pages/              # Page components
+│   ├── pages/              # Page components (React Router v7)
 │   └── App.tsx
 server/
+├── middleware/
+│   ├── errorHandler.ts     # Centralized error handling + custom error classes
+│   └── validation.ts       # Zod-based request validation
+├── repositories/           # Data access layer
+│   ├── participantRepository.ts
+│   ├── trainingRepository.ts
+│   ├── assignmentRepository.ts
+│   ├── messageRepository.ts
+│   ├── videoProgressRepository.ts
+│   └── systemRepository.ts
+├── services/               # Business logic layer
+│   ├── participantService.ts
+│   ├── trainingService.ts
+│   ├── assignmentService.ts
+│   ├── messageService.ts
+│   ├── videoProgressService.ts
+│   └── systemService.ts
+├── tests/                  # Unit tests (Vitest)
+│   ├── participantService.test.ts
+│   ├── errorHandler.test.ts
+│   └── systemService.test.ts
 ├── db.ts                   # Database connection (Drizzle + PostgreSQL)
-├── routes.ts               # API endpoints
-├── storage.ts              # Database storage class
+├── routes.ts               # API endpoints (thin routes delegating to services)
+├── storage.ts              # Legacy storage class (being deprecated)
 └── index.ts
 shared/
 └── schema.ts               # Drizzle ORM table definitions & Zod validation
@@ -120,17 +149,19 @@ Detailed architecture documentation is available in `docs/architecture/`:
 
 ## Modernization Roadmap
 
-### Phase 1: Stabilization (1-2 weeks)
-- [ ] Wouter → React Router migration
-- [ ] Backend layered architecture (Controller-Service-Repository)
-- [ ] Centralized error handler and validation middleware
-- [ ] Basic test infrastructure (Vitest)
+### Phase 1: Stabilization ✅ COMPLETE
+- [x] Wouter → React Router v7 migration
+- [x] Backend layered architecture (Repository-Service pattern)
+- [x] Centralized error handler with custom error classes
+- [x] Zod-based validation middleware
+- [x] Basic test infrastructure (Vitest with 37 passing tests)
 
 ### Phase 2: Enterprise Infrastructure (2-4 weeks)
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Redis + BullMQ notification system
 - [ ] Email notification service (Resend)
 - [ ] Comprehensive test coverage (80%+)
+- [ ] Controller layer restructuring
 
 ### Phase 3: Future Vision (Optional)
 - [ ] Next.js migration (SSR/SSG)
