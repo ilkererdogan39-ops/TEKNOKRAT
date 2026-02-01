@@ -12,7 +12,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm ci --omit=dev
+RUN npm ci
 
 # Build the application
 FROM base AS builder
@@ -23,7 +23,7 @@ COPY . .
 
 # Build the application
 RUN npm run build
-
+RUN npm prune --omit=dev
 # Production image
 FROM base AS runner
 WORKDIR /app
