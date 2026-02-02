@@ -1,7 +1,7 @@
 import { db } from "../db";
 import { participants, type Participant, type InsertParticipant } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
-
+import { randomUUID } from "crypto";
 export class ParticipantRepository {
   async findAll(): Promise<Participant[]> {
     return await db.select().from(participants);
@@ -29,17 +29,18 @@ export class ParticipantRepository {
     return result[0];
   }
 
-  async create(data: InsertParticipant): Promise<Participant> {
-    const result = await db.insert(participants).values({
-      employeeId: data.employeeId,
-      fullName: data.fullName,
-      department: data.department,
-      email: data.email,
-      password: data.password || null,
-      hasPassword: !!data.password,
-    }).returning();
-    return result[0];
-  }
+ async create(data: InsertParticipant): Promise<Participant> {
+  const result = await db.insert(participants).values({
+    id: randomUUID(),
+    employeeId: data.employeeId,
+    fullName: data.fullName,
+    department: data.department,
+    email: data.email,
+    password: data.password || null,
+    hasPassword: !!data.password,
+  }).returning();
+  return result[0];
+}
 
   async update(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined> {
     const updateData: Partial<typeof participants.$inferInsert> = {};
