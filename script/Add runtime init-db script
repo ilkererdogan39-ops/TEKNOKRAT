@@ -1,0 +1,10 @@
+import { execSync } from "child_process";
+
+try {
+  console.log("⏳ Running drizzle-kit push...");
+  execSync("npx drizzle-kit push", { stdio: "inherit" });
+  console.log("✅ Database schema pushed successfully");
+} catch (err) {
+  console.error("❌ Failed to push schema", err);
+  process.exit(1);
+}
