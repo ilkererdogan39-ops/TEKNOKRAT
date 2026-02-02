@@ -9,6 +9,7 @@
   "start": "NODE_ENV=production node dist/index.cjs",
   "check": "tsc",
   "db:push": "drizzle-kit push"
+  "init-db": "node -e \"require('child_process').execSync('npx drizzle-kit push', {stdio:'inherit'})\""
 },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
