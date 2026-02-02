@@ -30,7 +30,11 @@ export class ParticipantRepository {
     return result[0];
   }
 
+import { randomUUID } from "crypto";
+
 async create(data: InsertParticipant): Promise<Participant> {
+  console.log(" PARTICIPANT REPO CREATE HIT", { email: data.email });
+
   const result = await db.insert(participants).values({
     id: randomUUID(),
     employeeId: data.employeeId,
@@ -42,6 +46,7 @@ async create(data: InsertParticipant): Promise<Participant> {
   }).returning();
   return result[0];
 }
+
   async update(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined> {
     const updateData: Partial<typeof participants.$inferInsert> = {};
     if (data.employeeId !== undefined) updateData.employeeId = data.employeeId;
