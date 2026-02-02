@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { db } from "../db";
 import { participants, type Participant, type InsertParticipant } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
@@ -29,7 +30,7 @@ export class ParticipantRepository {
     return result[0];
   }
 
- async create(data: InsertParticipant): Promise<Participant> {
+async create(data: InsertParticipant): Promise<Participant> {
   const result = await db.insert(participants).values({
     id: randomUUID(),
     employeeId: data.employeeId,
@@ -41,7 +42,6 @@ export class ParticipantRepository {
   }).returning();
   return result[0];
 }
-
   async update(id: string, data: Partial<InsertParticipant>): Promise<Participant | undefined> {
     const updateData: Partial<typeof participants.$inferInsert> = {};
     if (data.employeeId !== undefined) updateData.employeeId = data.employeeId;
