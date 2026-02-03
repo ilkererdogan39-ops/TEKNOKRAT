@@ -6,10 +6,11 @@
 "scripts": {
   "dev": "NODE_ENV=development tsx server/index.ts",
   "build": "tsx script/build.ts",
-  "prestart": "npx drizzle-kit push",
-  "start": "NODE_ENV=production node dist/index.cjs",
-  "check": "tsc",
-  "db:push": "drizzle-kit push"
+  "migrate": "drizzle-kit generate && drizzle-kit migrate",
+  "start": "NODE_ENV=production npm run migrate && node dist/index.cjs",
+  "check": "tsc"
+},
+}
 }
 },
   "dependencies": {
