@@ -1,4 +1,4 @@
-name: Drizzle DB Push
+name: Drizzle DB Generate & Push
 
 on:
   push:
@@ -6,10 +6,11 @@ on:
       - main
 
 jobs:
-  db-push:
+  db-migrate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node
@@ -18,9 +19,14 @@ jobs:
           node-version: "20"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Push schema to Neon
+      - name: Generate migrations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx drizzle-kit push
+        run: npx drizzle-kit generate
+
+      - name: Push migrations to Neon
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npx drizzle-kit migrate
