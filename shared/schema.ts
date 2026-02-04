@@ -2,11 +2,23 @@ import { pgTable, text, boolean, integer, timestamp, varchar } from "drizzle-orm
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { sql } from "drizzle-orm";
+import { randomUUID } from "crypto";
 
 export type UserRole = "admin" | "participant";
 
+
+// export const participants = pgTable("participants", {
+//   id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+//   employeeId: varchar("employee_id", { length: 100 }).notNull(),
+//   fullName: varchar("full_name", { length: 255 }).notNull(),
+//   department: varchar("department", { length: 255 }).notNull(),
+//   email: varchar("email", { length: 255 }).notNull(),
+//   password: text("password"),
+//   hasPassword: boolean("has_password").notNull().default(false),
+// });
+
 export const participants = pgTable("participants", {
-  id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => randomUUID()),
   employeeId: varchar("employee_id", { length: 100 }).notNull(),
   fullName: varchar("full_name", { length: 255 }).notNull(),
   department: varchar("department", { length: 255 }).notNull(),
