@@ -1,5 +1,6 @@
-import { 
-  type Participant, 
+import crypto from "crypto";
+import {
+  type Participant,
   type InsertParticipant,
   type Training,
   type InsertTraining,
@@ -31,12 +32,12 @@ export interface IStorage {
   setParticipantPassword(id: string, password: string): Promise<Participant | undefined>;
   changeParticipantPassword(id: string, currentPassword: string, newPassword: string): Promise<Participant | undefined>;
   deleteParticipant(id: string): Promise<boolean>;
-  
+
   getTrainings(): Promise<Training[]>;
   getTraining(id: string): Promise<Training | undefined>;
   createTraining(training: InsertTraining): Promise<Training>;
   deleteTraining(id: string): Promise<boolean>;
-  
+
   getAssignments(): Promise<TrainingAssignment[]>;
   getAssignment(id: string): Promise<TrainingAssignment | undefined>;
   getAssignmentsByParticipant(participantId: string): Promise<TrainingAssignment[]>;
@@ -44,7 +45,7 @@ export interface IStorage {
   completeAssignment(id: string): Promise<TrainingAssignment | undefined>;
   deleteAssignmentsByTraining(trainingId: string): Promise<void>;
   deleteAssignmentsByParticipant(participantId: string): Promise<void>;
-  
+
   getMessages(): Promise<Message[]>;
   getMessage(id: string): Promise<Message | undefined>;
   getMessagesByParticipant(participantId: string): Promise<Message[]>;
@@ -52,18 +53,18 @@ export interface IStorage {
   markMessageAsRead(id: string): Promise<Message | undefined>;
   replyToMessage(id: string, reply: string): Promise<Message | undefined>;
   deleteMessage(id: string): Promise<boolean>;
-  
+
   resetAll(): Promise<void>;
-  
+
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   getVideoProgress(assignmentId: string): Promise<VideoWatchLog | undefined>;
   saveVideoProgress(data: SaveVideoProgress): Promise<VideoWatchLog>;
   getVideoWatchLogs(assignmentId: string): Promise<VideoWatchLog[]>;
   updateAssignmentProgress(assignmentId: string, progress: number): Promise<void>;
-  
+
   getSystemSetting(key: string): Promise<string | undefined>;
   setSystemSetting(key: string, value: string): Promise<void>;
 }
@@ -97,6 +98,7 @@ export class DatabaseStorage implements IStorage {
 
   async createParticipant(data: InsertParticipant): Promise<Participant> {
     const result = await db.insert(participants).values({
+      id: crypto.randomUUID(),
       employeeId: data.employeeId,
       fullName: data.fullName,
       department: data.department,
@@ -161,6 +163,7 @@ export class DatabaseStorage implements IStorage {
 
   async createTraining(data: InsertTraining): Promise<Training> {
     const result = await db.insert(trainings).values({
+      id: crypto.randomUUID(),
       title: data.title,
       videoUrl: data.videoUrl,
     }).returning();
@@ -187,6 +190,7 @@ export class DatabaseStorage implements IStorage {
 
   async createAssignment(trainingId: string, participantId: string): Promise<TrainingAssignment> {
     const result = await db.insert(trainingAssignments).values({
+      id: crypto.randomUUID(),
       trainingId,
       participantId,
     }).returning();
@@ -195,10 +199,10 @@ export class DatabaseStorage implements IStorage {
 
   async completeAssignment(id: string): Promise<TrainingAssignment | undefined> {
     const result = await db.update(trainingAssignments)
-      .set({ 
-        completed: true, 
-        completedAt: new Date(), 
-        progress: 100 
+      .set({
+        completed: true,
+        completedAt: new Date(),
+        progress: 100
       })
       .where(eq(trainingAssignments.id, id))
       .returning();
@@ -230,6 +234,7 @@ export class DatabaseStorage implements IStorage {
 
   async createMessage(data: InsertMessage): Promise<Message> {
     const result = await db.insert(messages).values({
+      id: crypto.randomUUID(),
       participantId: data.participantId,
       subject: data.subject,
       content: data.content,
@@ -278,7 +283,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(data: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(data).returning();
+    const result = await db.insert(users).values({
+      id: crypto.randomUUID(),
+      ...data,
+    }).returning();
     return result[0];
   }
 
@@ -292,7 +300,7 @@ export class DatabaseStorage implements IStorage {
 
   async saveVideoProgress(data: SaveVideoProgress): Promise<VideoWatchLog> {
     const existing = await this.getVideoProgress(data.assignmentId);
-    
+
     if (existing) {
       const result = await db.update(videoWatchLogs)
         .set({
@@ -306,6 +314,7 @@ export class DatabaseStorage implements IStorage {
       return result[0];
     } else {
       const result = await db.insert(videoWatchLogs).values({
+        id: crypto.randomUUID(),
         assignmentId: data.assignmentId,
         participantId: data.participantId,
         watchedSeconds: data.watchedSeconds,
@@ -340,7 +349,7 @@ export class DatabaseStorage implements IStorage {
         .set({ value, updatedAt: new Date() })
         .where(eq(systemSettings.key, key));
     } else {
-      await db.insert(systemSettings).values({ key, value });
+      await db.insert(systemSettings).values({ id: crypto.randomUUID(), key, value });
     }
   }
 }
